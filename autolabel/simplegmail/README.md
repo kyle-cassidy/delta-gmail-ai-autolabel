@@ -1,4 +1,4 @@
-# simplegmail
+# Delta AI Autolabel
 [![PyPI Downloads](https://img.shields.io/pypi/dm/simplegmail.svg?label=PyPI%20downloads)](
 https://pypi.org/project/simplegmail/)
 
@@ -17,18 +17,20 @@ Currently Supported Behavior:
 
 ## Table of Contents
 
-- [Getting Started](#getting-started)
-- [Installation](#installation)
-- [Usage](#usage)
-    - [Send a simple message](#send-a-simple-message)
-    - [Send a message with attachments, cc, bcc fields](#send-a-message-with-attachments-cc-bcc-fields)
-    - [Retrieving messages](#retrieving-messages)
-    - [Marking messages](#marking-messages)
-    - [Changing message labels](#changing-message-labels)
-    - [Downloading attachments](#downloading-attachments)
-    - [Retrieving messages with queries](#retrieving-messages-advanced-with-queries)
-    - [Retrieving messages with more advanced queries](#retrieving-messages-more-advanced-with-more-queries)
-- [Feedback](#feedback)
+- [Delta AI Autolabel](#delta-ai-autolabel)
+  - [Table of Contents](#table-of-contents)
+  - [Getting Started](#getting-started)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Send a simple message:](#send-a-simple-message)
+    - [Send a message with attachments, cc, bcc fields:](#send-a-message-with-attachments-cc-bcc-fields)
+    - [Retrieving messages:](#retrieving-messages)
+    - [Marking messages:](#marking-messages)
+    - [Changing message labels:](#changing-message-labels)
+    - [Downloading attachments:](#downloading-attachments)
+    - [Retrieving messages (advanced, with queries!):](#retrieving-messages-advanced-with-queries)
+    - [Retrieving messages (more advanced, with more queries!):](#retrieving-messages-more-advanced-with-more-queries)
+  - [Feedback](#feedback)
 
 ## Getting Started
 
