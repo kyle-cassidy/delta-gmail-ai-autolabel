@@ -44,3 +44,8 @@ output/*
 
 # Google API
 secrets/*
+
+# notes
+/notes/*
+
+.op/
