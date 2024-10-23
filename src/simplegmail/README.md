@@ -1,4 +1,4 @@
-# Delta AI Autolabel
+# SimpleGmail
 [![PyPI Downloads](https://img.shields.io/pypi/dm/simplegmail.svg?label=PyPI%20downloads)](
 https://pypi.org/project/simplegmail/)
 
@@ -17,7 +17,7 @@ Currently Supported Behavior:
 
 ## Table of Contents
 
-- [Delta AI Autolabel](#delta-ai-autolabel)
+- [SimpleGmail](#simplegmail)
   - [Table of Contents](#table-of-contents)
   - [Getting Started](#getting-started)
   - [Installation](#installation)
