@@ -41,3 +41,6 @@ htmlcov/
 # Project specific
 output/*
 !output/.gitkeep
+
+# Google API
+secrets/*
