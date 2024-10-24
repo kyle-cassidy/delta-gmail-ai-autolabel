@@ -37,7 +37,7 @@ project-root/
 - **`src/`**: Contains all source code modules.
   - **`pipeline/`**: Contains all processing steps in sequence.
     - **`step_1_email_retrieval.py`**: Interacts with the Gmail API to fetch emails.
-    - **`step_2_security_vetting.py`**: Performs spam detection and malware scanning.
+    - **`step_2_security_vetting.py`**: Performs spam detection and malware scanning on attachments.
     - **`step_3_content_processing.py`**: Parses emails and extracts content.
     - **`step_4_classification.py`**: Classifies emails based on content.
     - **`step_5_data_integration.py`**: Integrates data with Airtable or a database.
