@@ -75,7 +75,9 @@ class EmailProcessingService:
             raise
 
     async def process_email(self, message: Message) -> EmailProcessingState:
+        
         """Process a single email through the pipeline"""
+        
         state = EmailProcessingState(
             email_id=message.id,
             status=ProcessingStatus.PROCESSING,
@@ -125,12 +127,13 @@ class EmailProcessingService:
         state = self.processing_queue[message.id]
         state.status = ProcessingStatus.RETRYING
         state.retry_count += 1
-        # Implement retry logic here
+        # TODO: Implement retry logic here
 
     async def get_processing_state(self, email_id: str) -> Optional[EmailProcessingState]:
         """Get current processing state for an email"""
         return self.processing_queue.get(email_id)
 
+# TODO: Sec
 class SecurityException(Exception):
     """Raised when an email fails security checks"""
     pass
