@@ -1,17 +1,27 @@
 # Delta Inbox
+## Email Parsing and AI Labeling Integration Plan
 
-1. Define the Project Scope and Requirements
+### Project Scope and Requirements
 
 Objectives:
 
 	•	Email Monitoring: Develop an application that continuously monitors the biofertregistration@delta-ac.com inbox.
 	•	Security Vetting: Implement a mechanism to vet emails for suspicious intent (e.g., phishing, malware).
 	•	Content Extraction: Extract relevant information from email bodies and attachments.
-	•	Classification and Categorization: Classify emails and attachments based on their content and map them to the appropriate entities in your Airtable schema.
-	•	Data Integration: Store or update records in Airtable (or an SQL database) based on the extracted information.
-	•	Notifications: Optionally, send alerts or notifications to relevant team members when specific types of emails are received.
+	•	Classification and Categorization: Classify/label/tag emails and attachments based on their content and map them to the appropriate entities our Airtable schema.
+	•	Data Integration: Store or update records in Airtable and an SQL database based on the extracted information. Update Gmail and Gmelius labels based on the classification.
+	•	Notifications: Send alerts or notifications to relevant team members when specific types of emails are received.
 
-2. Understand the Email Content and Types
+Tech Stack:
+- Phase 1: 
+	•	Gmail API
+	•	Gmelius API
+	•	Airtable API
+- Phase 2: 
+	•	SQL Alchemy ORM
+	•	SQL Database (Postgres)
+
+### Email Content and Types
 
 Common Email Types:
 
@@ -78,9 +88,10 @@ Programming Language: Python is recommended due to its rich ecosystem and librar
 Libraries and Frameworks:
 
 	•	Email Access: google-api-python-client for Gmail API.
-	•	Email Parsing: email module, imaplib, mail-parser.
-	•	NLP: spaCy, NLTK, re for regex operations.
-	•	PDF Processing: PyPDF2, pdfminer.six.
+	•	Email Parsing: tbd. considering options... email module, imaplib, mail-parser.
+	•	Gmelius API: existing framework for sharing emails and labels with team members within the gmail account. 
+	•	NLP: tbd. considering options...
+	•	PDF Processing: tbd. considering options...
 	•	Excel Processing: openpyxl, pandas.
 	•	HTTP Requests: requests library for API interactions.
 	•	Airtable Integration: airtable-python-wrapper or direct API calls.
@@ -90,7 +101,7 @@ Security Tools:
 	•	Spam Detection: scikit-learn for custom models, or integrate with services.
 	•	Malware Scanning: APIs like VirusTotal.
 
-6. Develop the Email Retrieval Module
+1. Develop the Email Retrieval Module
 
 Steps:
 

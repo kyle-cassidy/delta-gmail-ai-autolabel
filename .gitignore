@@ -50,3 +50,8 @@ secrets/*
 
 .op/
 .DS_Store
+
+/data
+/data/clients/*.numbers
+/data/clients
+data/clients/delta-client-labels.numbers
