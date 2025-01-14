@@ -4,12 +4,40 @@ from src.client.gmail import Gmail
 
 @pytest.fixture
 def mock_gmail_api():
-    return MagicMock()
+    api = MagicMock()
+    # Setup mock responses for common API calls
+    api.users().messages().list().execute.return_value = {
+        'messages': [
+            {'id': '123', 'threadId': 'thread123'},
+            {'id': '456', 'threadId': 'thread456'}
+        ]
+    }
+    api.users().messages().get().execute.return_value = {
+        'id': '123',
+        'threadId': 'thread123',
+        'labelIds': ['INBOX'],
+        'payload': {
+            'headers': [
+                {'name': 'From', 'value': 'sender@example.com'},
+                {'name': 'Subject', 'value': 'Test Subject'}
+            ]
+        }
+    }
+    return api
 
 @pytest.fixture
-def gmail_client(mock_gmail_api):
-    with patch('src.client.gmail.build', return_value=mock_gmail_api):
-        return Gmail()
+def mock_creds():
+    creds = MagicMock()
+    creds.invalid = False
+    return creds
+
+@pytest.fixture
+def gmail_client(mock_gmail_api, mock_creds):
+    with patch('src.client.gmail.build', return_value=mock_gmail_api), \
+         patch('oauth2client.file.Storage') as mock_storage:
+        # Setup mock storage to return our mock credentials
+        mock_storage.return_value.get.return_value = mock_creds
+        return Gmail(_creds=mock_creds)
 
 def test_get_unread_inbox(gmail_client, mock_gmail_api):
     # Setup mock response
@@ -47,10 +75,11 @@ def test_get_message_by_id(gmail_client, mock_gmail_api):
     mock_gmail_api.users().messages().get().execute.return_value = mock_response
     
     # Execute
-    message = gmail_client.get_message(message_id)
+    messages = gmail_client.get_messages(user_id='me', msg_ids=[message_id])
     
     # Verify
-    assert message.id == message_id
+    assert len(messages) == 1
+    assert messages[0].id == message_id
     mock_gmail_api.users().messages().get.assert_called_with(
         userId='me',
         id=message_id,

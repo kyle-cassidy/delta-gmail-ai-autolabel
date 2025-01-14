@@ -18,8 +18,15 @@ def mock_audit_service():
     return AsyncMock()
 
 @pytest.fixture
-def security_service(mock_audit_service):
-    return SecurityService(audit_service=mock_audit_service)
+def mock_notification_service():
+    return AsyncMock()
+
+@pytest.fixture
+def security_service(mock_audit_service, mock_notification_service):
+    return SecurityService(
+        audit_service=mock_audit_service,
+        notification_service=mock_notification_service
+    )
 
 @pytest.fixture
 def sample_message():

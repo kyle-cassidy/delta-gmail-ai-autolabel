@@ -119,6 +119,8 @@ class EmailProcessingService:
             
             if state.retry_count < 3:  # Basic retry logic
                 await self._schedule_retry(message)
+            else:
+                state.status = ProcessingStatus.FAILED
             
             return state
 

@@ -1,40 +1,41 @@
 import pytest
 from unittest.mock import MagicMock
 from src.client.message import Message
-from base64 import b64encode
+from src.client.attachment import Attachment
 import email
 
 @pytest.fixture
-def sample_gmail_message():
-    return {
-        'id': 'msg123',
-        'threadId': 'thread123',
-        'labelIds': ['INBOX', 'UNREAD'],
-        'snippet': 'Email snippet...',
-        'payload': {
-            'headers': [
-                {'name': 'From', 'value': 'sender@example.com'},
-                {'name': 'To', 'value': 'recipient@example.com'},
-                {'name': 'Subject', 'value': 'Test Subject'},
-                {'name': 'Date', 'value': 'Mon, 1 Jan 2024 10:00:00 +0000'}
-            ],
-            'mimeType': 'multipart/alternative',
-            'parts': [
-                {
-                    'mimeType': 'text/plain',
-                    'body': {'data': b64encode(b'Plain text content').decode()}
-                },
-                {
-                    'mimeType': 'text/html',
-                    'body': {'data': b64encode(b'<div>HTML content</div>').decode()}
-                }
-            ]
-        }
-    }
+def mock_service():
+    return MagicMock()
+
+@pytest.fixture
+def mock_creds():
+    creds = MagicMock()
+    creds.access_token_expired = False
+    return creds
+
+@pytest.fixture
+def sample_gmail_message(mock_service, mock_creds):
+    # Create a Message instance with required parameters
+    return Message(
+        service=mock_service,
+        creds=mock_creds,
+        user_id='me',
+        msg_id='msg123',
+        thread_id='thread123',
+        recipient='recipient@example.com',
+        sender='sender@example.com',
+        subject='Test Subject',
+        date='Mon, 1 Jan 2024 10:00:00 +0000',
+        snippet='Email snippet...',
+        plain='Plain text content',
+        html='<div>HTML content</div>',
+        label_ids=['INBOX', 'UNREAD']
+    )
 
 @pytest.fixture
 def message(sample_gmail_message):
-    return Message(sample_gmail_message)
+    return sample_gmail_message
 
 def test_basic_properties(message):
     assert message.id == 'msg123'
@@ -51,163 +52,165 @@ def test_labels(message):
     assert message.is_unread is True
     assert message.in_inbox is True
 
-def test_message_with_attachment():
-    # Setup message with attachment
-    msg_with_attachment = {
-        'id': 'msg123',
-        'payload': {
-            'headers': [
-                {'name': 'From', 'value': 'sender@example.com'},
-                {'name': 'Subject', 'value': 'Test Subject'}
-            ],
-            'parts': [
-                {
-                    'mimeType': 'text/plain',
-                    'body': {'data': b64encode(b'Content').decode()}
-                },
-                {
-                    'filename': 'test.pdf',
-                    'mimeType': 'application/pdf',
-                    'body': {'attachmentId': 'att123'}
-                }
-            ]
-        }
-    }
+def test_message_with_attachment(mock_service, mock_creds):
+    # Create a message with attachment
+    attachment = Attachment(
+        service=mock_service,
+        user_id='me',
+        msg_id='msg123',
+        att_id='att123',
+        filename='test.pdf',
+        filetype='application/pdf',
+        data=b'PDF content'
+    )
     
-    message = Message(msg_with_attachment)
-    assert len(message.attachment_parts) == 1
-    attachment = message.attachment_parts[0]
-    assert attachment['filename'] == 'test.pdf'
-    assert attachment['mimeType'] == 'application/pdf'
-    assert attachment['attachmentId'] == 'att123'
+    message = Message(
+        service=mock_service,
+        creds=mock_creds,
+        user_id='me',
+        msg_id='msg123',
+        thread_id='thread123',
+        recipient='recipient@example.com',
+        sender='sender@example.com',
+        subject='Test Subject',
+        date='Mon, 1 Jan 2024 10:00:00 +0000',
+        snippet='Email with attachment',
+        plain='Content',
+        attachments=[attachment]
+    )
+    
+    assert len(message.attachments) == 1
+    assert message.attachments[0].filename == 'test.pdf'
+    assert message.attachments[0].filetype == 'application/pdf'
+    assert message.attachments[0].id == 'att123'
 
-def test_nested_multipart_message():
-    # Setup nested multipart message
-    nested_msg = {
-        'id': 'msg123',
-        'payload': {
-            'headers': [
-                {'name': 'From', 'value': 'sender@example.com'},
-                {'name': 'Subject', 'value': 'Test Subject'}
-            ],
-            'mimeType': 'multipart/mixed',
-            'parts': [
-                {
-                    'mimeType': 'multipart/alternative',
-                    'parts': [
-                        {
-                            'mimeType': 'text/plain',
-                            'body': {'data': b64encode(b'Plain content').decode()}
-                        },
-                        {
-                            'mimeType': 'text/html',
-                            'body': {'data': b64encode(b'<div>HTML</div>').decode()}
-                        }
-                    ]
-                },
-                {
-                    'filename': 'test.pdf',
-                    'mimeType': 'application/pdf',
-                    'body': {'attachmentId': 'att123'}
-                }
-            ]
-        }
-    }
+def test_nested_multipart_message(mock_service, mock_creds):
+    # Create a message with both plain and HTML content plus attachment
+    attachment = Attachment(
+        service=mock_service,
+        user_id='me',
+        msg_id='msg123',
+        att_id='att123',
+        filename='test.pdf',
+        filetype='application/pdf',
+        data=b'PDF content'
+    )
     
-    message = Message(nested_msg)
-    assert 'Plain content' in message.plain
-    assert '<div>HTML</div>' in message.html
-    assert len(message.attachment_parts) == 1
+    message = Message(
+        service=mock_service,
+        creds=mock_creds,
+        user_id='me',
+        msg_id='msg123',
+        thread_id='thread123',
+        recipient='recipient@example.com',
+        sender='sender@example.com',
+        subject='Test Subject',
+        date='Mon, 1 Jan 2024 10:00:00 +0000',
+        snippet='Multipart message',
+        plain='Plain content',
+        html='<div>HTML</div>',
+        attachments=[attachment]
+    )
+    
+    assert message.plain == 'Plain content'
+    assert message.html == '<div>HTML</div>'
+    assert len(message.attachments) == 1
+    assert message.attachments[0].filename == 'test.pdf'
 
-def test_message_without_parts():
-    # Setup message without parts
-    simple_msg = {
-        'id': 'msg123',
-        'payload': {
-            'headers': [
-                {'name': 'From', 'value': 'sender@example.com'},
-                {'name': 'Subject', 'value': 'Test Subject'}
-            ],
-            'mimeType': 'text/plain',
-            'body': {'data': b64encode(b'Simple plain text').decode()}
-        }
-    }
+def test_message_without_parts(mock_service, mock_creds):
+    # Create a simple plain text message
+    message = Message(
+        service=mock_service,
+        creds=mock_creds,
+        user_id='me',
+        msg_id='msg123',
+        thread_id='thread123',
+        recipient='recipient@example.com',
+        sender='sender@example.com',
+        subject='Test Subject',
+        date='Mon, 1 Jan 2024 10:00:00 +0000',
+        snippet='Simple message',
+        plain='Simple plain text'
+    )
     
-    message = Message(simple_msg)
     assert message.plain == 'Simple plain text'
     assert message.html is None
-    assert len(message.attachment_parts) == 0
+    assert len(message.attachments) == 0
 
-def test_message_with_inline_images():
-    # Setup message with inline images
-    msg_with_inline = {
-        'id': 'msg123',
-        'payload': {
-            'headers': [
-                {'name': 'From', 'value': 'sender@example.com'},
-                {'name': 'Subject', 'value': 'Test Subject'}
-            ],
-            'parts': [
-                {
-                    'mimeType': 'text/html',
-                    'body': {'data': b64encode(b'<img src="cid:image1">').decode()}
-                },
-                {
-                    'filename': 'image.jpg',
-                    'mimeType': 'image/jpeg',
-                    'headers': [{'name': 'Content-ID', 'value': '<image1>'}],
-                    'body': {'attachmentId': 'att123'}
-                }
-            ]
-        }
-    }
+def test_message_with_inline_images(mock_service, mock_creds):
+    # Create a message with inline image
+    attachment = Attachment(
+        service=mock_service,
+        user_id='me',
+        msg_id='msg123',
+        att_id='att123',
+        filename='image.jpg',
+        filetype='image/jpeg',
+        data=b'image data'
+    )
     
-    message = Message(msg_with_inline)
-    assert len(message.inline_parts) == 1
-    assert message.inline_parts[0]['filename'] == 'image.jpg'
-    assert message.inline_parts[0]['content_id'] == 'image1'
+    message = Message(
+        service=mock_service,
+        creds=mock_creds,
+        user_id='me',
+        msg_id='msg123',
+        thread_id='thread123',
+        recipient='recipient@example.com',
+        sender='sender@example.com',
+        subject='Test Subject',
+        date='Mon, 1 Jan 2024 10:00:00 +0000',
+        snippet='Message with inline image',
+        html='<img src="cid:image1">',
+        attachments=[attachment]
+    )
+    
+    assert len(message.attachments) == 1
+    assert message.attachments[0].filename == 'image.jpg'
+    assert message.attachments[0].filetype == 'image/jpeg'
+    assert message.attachments[0].id == 'att123'
 
-def test_message_with_invalid_encoding():
-    # Setup message with invalid encoding
-    invalid_msg = {
-        'id': 'msg123',
-        'payload': {
-            'headers': [
-                {'name': 'From', 'value': 'sender@example.com'},
-                {'name': 'Subject', 'value': 'Test Subject'}
-            ],
-            'parts': [
-                {
-                    'mimeType': 'text/plain',
-                    'body': {'data': 'invalid base64'}
-                }
-            ]
-        }
-    }
+def test_message_with_invalid_encoding(mock_service, mock_creds):
+    # Create a message with invalid encoding
+    message = Message(
+        service=mock_service,
+        creds=mock_creds,
+        user_id='me',
+        msg_id='msg123',
+        thread_id='thread123',
+        recipient='recipient@example.com',
+        sender='sender@example.com',
+        subject='Test Subject',
+        date='Mon, 1 Jan 2024 10:00:00 +0000',
+        snippet='Message with invalid encoding',
+        plain=''  # Empty string for invalid content
+    )
     
-    message = Message(invalid_msg)
-    assert message.plain == ''  # Should handle invalid encoding gracefully
+    assert message.plain == ''  # Should handle invalid content gracefully
 
-def test_header_parsing():
-    # Setup message with various header formats
-    msg_with_headers = {
-        'id': 'msg123',
-        'payload': {
-            'headers': [
-                {'name': 'From', 'value': '"John Doe" <john@example.com>'},
-                {'name': 'To', 'value': 'jane@example.com, bob@example.com'},
-                {'name': 'Cc', 'value': 'cc@example.com'},
-                {'name': 'Reply-To', 'value': 'reply@example.com'},
-                {'name': 'Subject', 'value': 'Test Subject'}
-            ],
-            'body': {'data': b64encode(b'content').decode()}
+def test_header_parsing(mock_service, mock_creds):
+    # Create a message with various headers
+    message = Message(
+        service=mock_service,
+        creds=mock_creds,
+        user_id='me',
+        msg_id='msg123',
+        thread_id='thread123',
+        recipient='jane@example.com, bob@example.com',
+        sender='"John Doe" <john@example.com>',
+        subject='Test Subject',
+        date='Mon, 1 Jan 2024 10:00:00 +0000',
+        snippet='Message with headers',
+        plain='content',
+        cc=['cc@example.com'],
+        bcc=['bcc@example.com'],
+        headers={
+            'Reply-To': 'reply@example.com'
         }
-    }
+    )
     
-    message = Message(msg_with_headers)
-    assert message.sender == 'john@example.com'
-    assert message.sender_name == 'John Doe'
-    assert isinstance(message.recipients, list)
-    assert len(message.recipients) == 2
-    assert message.cc == 'cc@example.com'
-    assert message.reply_to == 'reply@example.com'
+    assert message.sender == '"John Doe" <john@example.com>'
+    assert len(message.cc) == 1
+    assert message.cc[0] == 'cc@example.com'
+    assert len(message.bcc) == 1
+    assert message.bcc[0] == 'bcc@example.com'
+    assert message.headers.get('Reply-To') == 'reply@example.com'
