@@ -3,29 +3,28 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "delta-gmail-ai-autolabel"
+name = "your-project-name"
 version = "0.1.0"
-description = "AI-powered Gmail auto-labeling system"
-requires-python = ">=3.9"
+description = "Your project description"
+requires-python = ">=3.8"
 authors = [
-    { name = "Kyle Cassidy" },
+    { name = "Your Name", email = "your.email@example.com" },
 ]
 
 [tool.pytest.ini_options]
-addopts = "-v"
+addopts = "-ra -q"
 testpaths = ["tests"]
-asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.black]
 line-length = 88
-target-version = ['py39']
+target-version = ['py38']
 include = '\.pyi?$'
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
-plugins = ["pydantic.mypy"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
