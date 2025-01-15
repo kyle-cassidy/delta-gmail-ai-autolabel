@@ -74,6 +74,14 @@ def mock_gmail_api():
         ]
     }
     
+    # Mock messages().modify()
+    modify = MagicMock()
+    messages.modify.return_value = modify
+    modify.execute.return_value = {
+        'id': '123',
+        'labelIds': ['Label_1', 'Label_2']
+    }
+    
     return api
 
 @pytest.fixture
@@ -156,6 +164,7 @@ def test_modify_labels(gmail_client, mock_gmail_api):
             'removeLabelIds': remove_labels
         }
     )
+    assert modify_response.execute.called
 
 def test_create_label(gmail_client, mock_gmail_api):
     """Test creating a new label."""
