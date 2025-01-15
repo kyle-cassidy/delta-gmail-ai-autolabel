@@ -55,3 +55,8 @@ secrets/*
 /data/clients/*.numbers
 /data/clients
 data/clients/delta-client-labels.numbers
+
+# Secrets
+secrets/
+*.json
+secrets/*.json
