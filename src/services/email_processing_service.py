@@ -128,10 +128,13 @@ class EmailProcessingService:
             await self.notifier.send_error(f"Failed to process email {message.id}", str(e))
             await self.audit.log_error(message.id, e)
             
-            if state.retry_count >= 2:  # Already tried 3 times (0, 1, 2)
+            # Increment retry count before checking
+            state.retry_count += 1
+            
+            if state.retry_count > 0:  # Already tried once
                 state.status = ProcessingStatus.FAILED
                 await self.notifier.send_error(
-                    f"Email {message.id} failed after {state.retry_count + 1} attempts",
+                    f"Email {message.id} failed after {state.retry_count} attempts",
                     f"Final error: {str(e)}"
                 )
             else:
