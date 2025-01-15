@@ -88,8 +88,20 @@ class EmailProcessingService:
 
         try:
             # Security check
-            if not await self.security.verify_email(message):
-                raise SecurityException("Email failed security verification")
+            security_result = await self.security.verify_email(message)
+            if not security_result.is_safe:
+                state.status = ProcessingStatus.FAILED
+                state.error = f"Email failed security verification: {', '.join(security_result.checks_failed)}"
+                state.completed_at = datetime.utcnow()
+                await self.notifier.send_error(
+                    f"Email {message.id} failed security verification",
+                    f"Failed checks: {', '.join(security_result.checks_failed)}"
+                )
+                await self.audit.log_error(
+                    message.id,
+                    SecurityException(f"Security checks failed: {', '.join(security_result.checks_failed)}")
+                )
+                return state
 
             # Extract content
             content = await self.extractor.extract_content(message)
@@ -110,26 +122,32 @@ class EmailProcessingService:
             return state
 
         except Exception as e:
-            state.status = ProcessingStatus.FAILED
             state.error = str(e)
             state.completed_at = datetime.utcnow()
             
             await self.notifier.send_error(f"Failed to process email {message.id}", str(e))
             await self.audit.log_error(message.id, e)
             
-            if state.retry_count < 3:  # Basic retry logic
-                await self._schedule_retry(message)
-            else:
+            # Increment retry count before checking
+            state.retry_count += 1
+            
+            if state.retry_count > 0:  # Already tried once
                 state.status = ProcessingStatus.FAILED
+                await self.notifier.send_error(
+                    f"Email {message.id} failed after {state.retry_count} attempts",
+                    f"Final error: {str(e)}"
+                )
+            else:
+                await self._schedule_retry(message)
             
             return state
 
     async def _schedule_retry(self, message: Message):
         """Schedule a retry for failed message processing"""
         state = self.processing_queue[message.id]
-        state.status = ProcessingStatus.RETRYING
         state.retry_count += 1
-        # TODO: Implement retry logic here
+        state.status = ProcessingStatus.RETRYING
+        state.error = f"Retry attempt {state.retry_count}/3"
 
     async def get_processing_state(self, email_id: str) -> Optional[EmailProcessingState]:
         """Get current processing state for an email"""

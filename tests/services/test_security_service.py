@@ -55,7 +55,7 @@ async def test_verify_email_valid_sender(security_service, sample_message):
     result = await security_service.verify_email(sample_message)
     
     # Verify: Should pass security checks
-    assert result is True, "Valid email should pass security verification"
+    assert result.is_safe, "Valid email should pass security verification"
 
 @pytest.mark.asyncio
 async def test_verify_email_suspicious_sender(security_service, sample_message, mock_audit_service):
@@ -78,7 +78,7 @@ async def test_verify_email_suspicious_sender(security_service, sample_message, 
     result = await security_service.verify_email(sample_message)
     
     # Verify: Check security response
-    assert result is False, "Suspicious sender should fail verification"
+    assert not result.is_safe, "Suspicious sender should fail verification"
     mock_audit_service.log_security_event.assert_called_once(), \
         "Security event should be logged for suspicious sender"
 
@@ -107,7 +107,7 @@ async def test_verify_email_with_attachments(security_service, sample_message):
     result = await security_service.verify_email(sample_message)
     
     # Verify: Check attachment validation
-    assert result is True, "Email with valid PDF attachment should pass verification"
+    assert result.is_safe, "Email with valid PDF attachment should pass verification"
 
 @pytest.mark.asyncio
 async def test_verify_email_suspicious_attachment(security_service, sample_message, mock_audit_service):
@@ -133,7 +133,7 @@ async def test_verify_email_suspicious_attachment(security_service, sample_messa
     result = await security_service.verify_email(sample_message)
     
     # Verify: Check security response
-    assert result is False, "Email with executable attachment should fail verification"
+    assert not result.is_safe, "Email with executable attachment should fail verification"
     mock_audit_service.log_security_event.assert_called_once(), \
         "Security event should be logged for suspicious attachment"
 
@@ -162,7 +162,7 @@ async def test_verify_email_large_attachment(security_service, sample_message, m
     result = await security_service.verify_email(sample_message)
     
     # Verify: Check size limit enforcement
-    assert result is False, "Email with oversized attachment should fail verification"
+    assert not result.is_safe, "Email with oversized attachment should fail verification"
     mock_audit_service.log_security_event.assert_called_once(), \
         "Security event should be logged for oversized attachment"
 
@@ -188,7 +188,7 @@ async def test_verify_email_suspicious_content(security_service, sample_message,
     result = await security_service.verify_email(sample_message)
     
     # Verify: Check content analysis response
-    assert result is False, "Email with suspicious content should fail verification"
+    assert not result.is_safe, "Email with suspicious content should fail verification"
     mock_audit_service.log_security_event.assert_called_once(), \
         "Security event should be logged for suspicious content"
 
@@ -217,7 +217,7 @@ async def test_verify_email_multiple_issues(security_service, sample_message, mo
     result = await security_service.verify_email(sample_message)
     
     # Verify: Check comprehensive security response
-    assert result is False, "Email with multiple security issues should fail verification"
+    assert not result.is_safe, "Email with multiple security issues should fail verification"
     assert mock_audit_service.log_security_event.call_count == 2, \
         "Each security issue should generate a separate audit log entry"
 

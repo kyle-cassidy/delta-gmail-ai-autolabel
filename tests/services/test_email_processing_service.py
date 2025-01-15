@@ -20,6 +20,7 @@ from src.services.email_processing_service import (
     SecurityException
 )
 from src.client.message import Message
+from src.services.security_service import SecurityVerificationResult
 
 @pytest.fixture
 def mock_services():
@@ -83,7 +84,13 @@ async def test_successful_email_processing(email_processing_service, mock_servic
     and verifies that each service is called exactly once with correct parameters.
     """
     # Setup: Configure mock services to simulate successful processing
-    mock_services['security_service'].verify_email.return_value = True
+    mock_services['security_service'].verify_email.return_value = SecurityVerificationResult(
+        is_safe=True,
+        checks_passed=['sender_verification', 'content_safety'],
+        checks_failed=[],
+        scan_date=datetime.utcnow(),
+        threat_level='low'
+    )
     mock_services['content_extraction_service'].extract_content.return_value = {"text": "test content"}
     mock_services['classification_service'].classify.return_value = {"type": "certificate"}
     
@@ -121,7 +128,13 @@ async def test_security_check_failure(email_processing_service, mock_services, s
     are properly handled and don't proceed to content extraction or classification.
     """
     # Setup: Configure security service to reject the email
-    mock_services['security_service'].verify_email.return_value = False
+    mock_services['security_service'].verify_email.return_value = SecurityVerificationResult(
+        is_safe=False,
+        checks_passed=[],
+        checks_failed=['sender_verification'],
+        scan_date=datetime.utcnow(),
+        threat_level='high'
+    )
     
     # Execute: Attempt to process the email
     result = await email_processing_service.process_email(sample_message)
@@ -159,7 +172,13 @@ async def test_process_new_emails_batch(email_processing_service, mock_services)
         for i in range(3)
     ]
     mock_services['gmail_client'].get_unread_inbox.return_value = messages
-    mock_services['security_service'].verify_email.return_value = True
+    mock_services['security_service'].verify_email.return_value = SecurityVerificationResult(
+        is_safe=True,
+        checks_passed=['sender_verification', 'content_safety'],
+        checks_failed=[],
+        scan_date=datetime.utcnow(),
+        threat_level='low'
+    )
     
     # Execute: Process the batch of emails
     results = await email_processing_service.process_new_emails()
