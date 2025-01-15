@@ -179,7 +179,6 @@ class Gmail(object):
     def get_unread_inbox(
         self,
         user_id: str = 'me',
-        labels: Optional[List[Label]] = None,
         query: str = '',
         attachments: str = 'reference'
     ) -> List[Message]:
@@ -187,30 +186,49 @@ class Gmail(object):
         Gets unread messages from your inbox.
 
         Args:
-            user_id: The user's email address. By default, the authenticated
-                user.
-            labels: Labels that messages must match.
+            user_id: The user's email address. By default, the authenticated user.
             query: A Gmail query to match.
-            attachments: Accepted values are 'ignore' which completely
-                ignores all attachments, 'reference' which includes attachment
-                information but does not download the data, and 'download' which
-                downloads the attachment data to store locally. Default
-                'reference'.
+            attachments: How to handle attachments ('ignore', 'reference', 'download')
 
         Returns:
             A list of message objects.
 
         Raises:
-            googleapiclient.errors.HttpError: There was an error executing the
-                HTTP request.
-
+            googleapiclient.errors.HttpError: There was an error executing the HTTP request.
         """
+        # Build query for unread inbox messages
+        q = "label:INBOX label:UNREAD"
+        if query:
+            q = f"{q} {query}"
 
-        if labels is None:
-            labels = []
-
-        labels.append(label.INBOX)
-        return self.get_unread_messages(user_id, labels, query)
+        try:
+            # Get message list
+            response = self.service.users().messages().list(
+                userId=user_id,
+                q=q,
+                includeSpamTrash=False
+            ).execute()
+            
+            messages = []
+            if 'messages' in response:
+                for msg_ref in response['messages']:
+                    try:
+                        full_msg = self.service.users().messages().get(
+                            userId=user_id,
+                            id=msg_ref['id'],
+                            format='full'
+                        ).execute()
+                        if not full_msg.get('threadId'):
+                            full_msg['threadId'] = msg_ref.get('threadId', '')
+                        messages.append(self._build_message_from_response(full_msg))
+                    except HttpError as e:
+                        print(f"Error fetching message {msg_ref['id']}: {e}")
+                        continue
+            
+            return messages
+            
+        except HttpError as error:
+            raise error
 
     def get_starred_messages(
         self,
@@ -481,14 +499,130 @@ class Gmail(object):
         labels.append(label.SPAM)
         return self.get_messages(user_id, labels, query, attachments, True)
 
+    def modify_labels(self, message_id: str, add_labels: List[str], remove_labels: List[str], user_id: str = 'me') -> None:
+        """
+        Modify the labels on a message.
+        
+        Args:
+            message_id: The ID of the message to modify
+            add_labels: List of label IDs to add
+            remove_labels: List of label IDs to remove
+            user_id: The user's email address (default: 'me')
+        """
+        try:
+            self.service.users().messages().modify(
+                userId=user_id,
+                id=message_id,
+                body={
+                    'addLabelIds': add_labels,
+                    'removeLabelIds': remove_labels
+                }
+            ).execute()
+        except HttpError as error:
+            raise error
+
+    def create_label(self, name: str, user_id: str = 'me') -> Label:
+        """
+        Create a new label.
+        
+        Args:
+            name: Name of the label to create
+            user_id: The user's email address (default: 'me')
+            
+        Returns:
+            The created Label object
+        """
+        try:
+            result = self.service.users().labels().create(
+                userId=user_id,
+                body={
+                    'name': name,
+                    'labelListVisibility': 'labelShow',
+                    'messageListVisibility': 'show'
+                }
+            ).execute()
+            return Label(result['id'], result['name'])
+        except HttpError as error:
+            raise error
+
     def get_messages(
         self,
         user_id: str = 'me',
         labels: Optional[List[Label]] = None,
         query: str = '',
+        msg_ids: Optional[List[str]] = None,
         attachments: str = 'reference',
         include_spam_trash: bool = False
     ) -> List[Message]:
+        """
+        Gets messages from the user's mailbox.
+        
+        Args:
+            user_id: The user's email address
+            labels: Label IDs messages must match
+            query: A Gmail query to match
+            msg_ids: Specific message IDs to retrieve
+            attachments: How to handle attachments ('ignore', 'reference', 'download')
+            include_spam_trash: Whether to include spam/trash messages
+            
+        Returns:
+            List of Message objects
+        """
+        try:
+            if msg_ids:
+                # If specific message IDs are provided, retrieve those messages
+                messages = []
+                for msg_id in msg_ids:
+                    msg = self.service.users().messages().get(
+                        userId=user_id,
+                        id=msg_id,
+                        format='full'
+                    ).execute()
+                    messages.append(self._build_message_from_response(msg))
+                return messages
+            
+            # Build query string from labels and query
+            q = query
+            if labels:
+                label_queries = [f"label:{label.id if isinstance(label, Label) else label}" 
+                               for label in labels]
+                if q:
+                    q = f"{q} AND ({' '.join(label_queries)})"
+                else:
+                    q = ' '.join(label_queries)
+            
+            # Get message list
+            try:
+                response = self.service.users().messages().list(
+                    userId=user_id,
+                    q=q,
+                    includeSpamTrash=include_spam_trash
+                ).execute()
+                
+                messages = []
+                if 'messages' in response:
+                    for msg_ref in response['messages']:
+                        try:
+                            full_msg = self.service.users().messages().get(
+                                userId=user_id,
+                                id=msg_ref['id'],
+                                format='full'
+                            ).execute()
+                            if not full_msg.get('threadId'):
+                                full_msg['threadId'] = msg_ref.get('threadId', '')
+                            messages.append(self._build_message_from_response(full_msg))
+                        except HttpError as e:
+                            # Log error but continue with other messages
+                            print(f"Error fetching message {msg_ref['id']}: {e}")
+                            continue
+                
+                return messages
+            except HttpError as error:
+                print(f"Error listing messages: {error}")
+                return []
+            
+        except HttpError as error:
+            raise error
         """
         Gets messages from your account.
 
@@ -652,6 +786,46 @@ class Gmail(object):
         except HttpError as error:
             # Pass along the error
             raise error
+
+    def _build_message_from_response(self, response: dict) -> Message:
+        """Build a Message object from a Gmail API response."""
+        # Extract headers
+        headers = {}
+        for header in response['payload']['headers']:
+            headers[header['name']] = header['value']
+        
+        # Get message content
+        plain = None
+        html = None
+        if 'parts' in response['payload']:
+            for part in response['payload']['parts']:
+                if part['mimeType'] == 'text/plain':
+                    if 'data' in part['body']:
+                        plain = base64.urlsafe_b64decode(
+                            part['body']['data'].encode('utf-8')
+                        ).decode('utf-8')
+                elif part['mimeType'] == 'text/html':
+                    if 'data' in part['body']:
+                        html = base64.urlsafe_b64decode(
+                            part['body']['data'].encode('utf-8')
+                        ).decode('utf-8')
+        
+        # Create message object
+        return Message(
+            service=self.service,
+            creds=self.creds,
+            user_id='me',
+            msg_id=response['id'],
+            thread_id=response['threadId'],
+            recipient=headers.get('To', ''),
+            sender=headers.get('From', ''),
+            subject=headers.get('Subject', ''),
+            date=headers.get('Date', ''),
+            snippet=response.get('snippet', ''),
+            plain=plain,
+            html=html,
+            label_ids=response.get('labelIds', [])
+        )
 
     def _get_messages_from_refs(
         self,

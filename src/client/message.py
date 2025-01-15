@@ -6,6 +6,7 @@ This module contains the implementation of the Message object.
 """
 
 from typing import List, Optional, Union
+import email.utils
 
 from httplib2 import Http
 from googleapiclient.errors import HttpError
@@ -87,7 +88,7 @@ class Message(object):
         self.recipient = recipient
         self.sender = sender
         self.subject = subject
-        self.date = date
+        self.date = email.utils.parsedate_to_datetime(date)
         self.snippet = snippet
         self.plain = plain
         self.html = html
@@ -101,8 +102,22 @@ class Message(object):
     def service(self) -> 'googleapiclient.discovery.Resource':
         if self.creds.access_token_expired:
             self.creds.refresh(Http())
-
         return self._service
+
+    @property
+    def labels(self) -> List[str]:
+        """Get message labels."""
+        return self.label_ids
+
+    @property
+    def is_unread(self) -> bool:
+        """Check if message is unread."""
+        return label.UNREAD in self.label_ids
+
+    @property
+    def in_inbox(self) -> bool:
+        """Check if message is in inbox."""
+        return label.INBOX in self.label_ids
 
     def __repr__(self) -> str:
         """Represents the object by its sender, recipient, and id."""
