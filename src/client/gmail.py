@@ -541,7 +541,7 @@ class Gmail(object):
                     'messageListVisibility': 'show'
                 }
             ).execute()
-            return Label(result['id'], result['name'])
+            return Label(name=result['name'], id=result['id'])
         except HttpError as error:
             raise error
 
@@ -717,50 +717,6 @@ class Gmail(object):
         else:
             labels = [Label(name=x['name'], id=x['id']) for x in res['labels']]
             return labels
-
-    def create_label(
-        self,
-        name: str,
-        user_id: str = 'me'
-    ) -> Label:
-        """
-        Creates a new label.
-
-        Args:
-            name: The display name of the new label.
-            user_id: The user's email address. By default, the authenticated
-                user.
-
-        Returns:
-            The created Label object.
-
-        Raises:
-            googleapiclient.errors.HttpError: There was an error executing the
-                HTTP request.
-
-        """
-
-        body = {
-            "name": name,
-
-            # TODO: In the future, can add the following fields:
-            # "messageListVisibility"
-            # "labelListVisibility"
-            # "color"
-        }
-
-        try:
-            res = self.service.users().labels().create(
-                userId=user_id,
-                body=body
-            ).execute()
-
-        except HttpError as error:
-            # Pass along the error
-            raise error
-
-        else:
-            return Label(res['name'], res['id'])
 
     def delete_label(self, label: Label, user_id: str = 'me') -> None:
         """
