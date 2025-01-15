@@ -23,6 +23,7 @@ wheels/
 # Virtual Environment
 .env
 .venv
+.venv-3.11
 env/
 venv/
 ENV/
@@ -60,3 +61,9 @@ data/clients/delta-client-labels.numbers
 secrets/
 *.json
 secrets/*.json
+credentials/*.json
+
+#notebooks
+notebooks/*
+
+vertex-ai-samples/
