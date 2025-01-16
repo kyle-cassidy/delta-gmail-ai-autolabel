@@ -61,15 +61,20 @@ jobs:
         # Set environment variables
         export GOOGLE_APPLICATION_CREDENTIALS="$PWD/vertex_credentials.json"
         export GOOGLE_CLOUD_PROJECT="${{ env.PROJECT_ID }}"
-        # Verify credentials
-        gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
-        # Initialize Vertex AI client
+        # Verify credentials and activate service account
         python -c "
+        import json
+        import os
         from google.cloud import aiplatform
+        
+        # Read and parse credentials
+        with open('vertex_credentials.json', 'r') as f:
+            creds = json.load(f)
+            
         aiplatform.init(
             project='${{ env.PROJECT_ID }}',
             location='${{ env.REGION }}',
-            credentials_dict=eval(open('vertex_credentials.json').read())
+            credentials_dict=creds
         )
         "
         
