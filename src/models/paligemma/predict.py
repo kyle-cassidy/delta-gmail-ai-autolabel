@@ -41,6 +41,19 @@ logger.info(f"Using endpoint: {ENDPOINT_PATH}")
 endpoint = aiplatform.Endpoint(ENDPOINT_PATH)
 
 
+def _resize_image(img: Image.Image, max_size: int = 1024) -> bytes:  # type: ignore
+    """Resize image if it exceeds max dimensions while maintaining aspect ratio."""
+    if max(img.size) <= max_size:
+        return img.tobytes()
+
+    ratio = max_size / max(img.size)
+    new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+    resized_img = img.resize(new_size, Image.Resampling.LANCZOS)  # type: ignore
+    buffer = io.BytesIO()
+    resized_img.save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
 def encode_image(image_path: str) -> str:
     """Encode image to base64 string."""
     if image_path.startswith(("http://", "https://")):
@@ -50,17 +63,9 @@ def encode_image(image_path: str) -> str:
         with open(image_path, "rb") as f:
             img_data = f.read()
 
-    # Resize image if needed (Vertex AI has request size limits)
     img = Image.open(io.BytesIO(img_data))  # type: ignore
-    if max(img.size) > 1024:
-        ratio = 1024.0 / max(img.size)
-        new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
-        img = img.resize(new_size, Image.Resampling.LANCZOS)  # type: ignore
-        buffer = io.BytesIO()
-        img.save(buffer, format="JPEG")
-        img_data = buffer.getvalue()
-
-    return base64.b64encode(img_data).decode("utf-8")
+    processed_img_data = _resize_image(img)
+    return base64.b64encode(processed_img_data).decode("utf-8")
 
 
 def make_prediction(
