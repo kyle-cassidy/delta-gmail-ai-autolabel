@@ -72,15 +72,30 @@ def encode_image(image_path: str) -> str:
 def make_prediction(
     instances: List[Dict[str, Any]], max_retries: int = 3, delay: int = 1
 ) -> Any:
-    for attempt in range(max_retries):
+    """Make a prediction using the PaLIGemma endpoint with retry logic.
+
+    Args:
+        instances: List of instances to predict on
+        max_retries: Maximum number of retries (not including initial attempt)
+        delay: Delay between retries in seconds
+
+    Returns:
+        Prediction response from the endpoint
+
+    Raises:
+        Exception: If all attempts fail
+    """
+    last_error = None
+    for attempt in range(max_retries + 1):  # +1 for initial attempt
         try:
             return endpoint.predict(instances=instances)
         except Exception as e:
+            last_error = e
             logging.error(f"Attempt {attempt + 1} failed: {e}")
-            if attempt < max_retries - 1:
+            if attempt < max_retries:  # Only sleep if we're going to retry
                 time.sleep(delay)
                 continue
-            raise
+            raise last_error  # Re-raise the last error we caught
 
 
 if __name__ == "__main__":
