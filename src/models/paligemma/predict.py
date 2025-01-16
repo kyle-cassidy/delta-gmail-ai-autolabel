@@ -5,18 +5,18 @@
 import base64
 import io
 import re
-from typing import Dict, List, Sequence, Tuple, Union, Any
+from typing import Dict, List, Sequence, Tuple, Union, Any, Optional
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import requests
+import requests  # type: ignore
 from google.cloud import aiplatform
 from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
 from PIL import Image
 from google.api_core import retry, exceptions
-import grpc
+import grpc  # type: ignore
 import logging
 import time
 import os
@@ -41,6 +41,20 @@ logger.info(f"Using endpoint: {ENDPOINT_PATH}")
 endpoint = aiplatform.Endpoint(ENDPOINT_PATH)
 
 
+def _resize_image(img: Image.Image, max_size: int = 1024) -> bytes:  # type: ignore
+    """Resize image if it exceeds max dimensions while maintaining aspect ratio."""
+    buffer = io.BytesIO()
+    if max(img.size) <= max_size:
+        img.save(buffer, format="JPEG")
+        return buffer.getvalue()
+
+    ratio = max_size / max(img.size)
+    new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+    resized_img = img.resize(new_size, Image.Resampling.LANCZOS)  # type: ignore
+    resized_img.save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
 def encode_image(image_path: str) -> str:
     """Encode image to base64 string."""
     if image_path.startswith(("http://", "https://")):
@@ -50,24 +64,17 @@ def encode_image(image_path: str) -> str:
         with open(image_path, "rb") as f:
             img_data = f.read()
 
-    # Resize image if needed (Vertex AI has request size limits)
-    img = Image.open(io.BytesIO(img_data))
-    if max(img.size) > 1024:
-        ratio = 1024.0 / max(img.size)
-        new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
-        img = img.resize(new_size, Image.Resampling.LANCZOS)
-        buffer = io.BytesIO()
-        img.save(buffer, format="JPEG")
-        img_data = buffer.getvalue()
-
-    return base64.b64encode(img_data).decode("utf-8")
+    img = Image.open(io.BytesIO(img_data))  # type: ignore
+    processed_img_data = _resize_image(img)
+    return base64.b64encode(processed_img_data).decode("utf-8")
 
 
-def make_prediction(instances, max_retries=3, delay=1):
+def make_prediction(
+    instances: List[Dict[str, Any]], max_retries: int = 3, delay: int = 1
+) -> Any:
     for attempt in range(max_retries):
         try:
-            response = endpoint.predict(instances=instances)
-            return response
+            return endpoint.predict(instances=instances)
         except Exception as e:
             logging.error(f"Attempt {attempt + 1} failed: {e}")
             if attempt < max_retries - 1:
