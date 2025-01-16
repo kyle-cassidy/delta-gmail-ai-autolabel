@@ -56,37 +56,20 @@ jobs:
     
     - name: Initialize Vertex AI
       run: |
-        # Write credentials to a file that Vertex AI can read
-        echo '${{ secrets.GOOGLE_CREDENTIALS }}' | jq '.' > vertex_credentials.json
-        # Debug: Check if file exists and has content
-        ls -l vertex_credentials.json
-        # Set environment variables
-        export GOOGLE_APPLICATION_CREDENTIALS="$PWD/vertex_credentials.json"
-        export GOOGLE_CLOUD_PROJECT="${{ env.PROJECT_ID }}"
-        
-        # Initialize Vertex AI
+        # Use the credentials file created by google-github-actions/auth
         python -c "
-        import json
         import os
         from google.cloud import aiplatform
         
-        # Read and parse credentials
-        with open('vertex_credentials.json', 'r') as f:
-            content = f.read().strip()
-            print('File content length:', len(content))
-            creds = json.loads(content)
-            
         aiplatform.init(
             project='${{ env.PROJECT_ID }}',
-            location='${{ env.REGION }}',
-            credentials_dict=creds
+            location='${{ env.REGION }}'
         )
         print('Successfully initialized Vertex AI')
         "
         
     - name: Run tests
       env:
-        GOOGLE_APPLICATION_CREDENTIALS: vertex_credentials.json
         GCLOUD_PROJECT: ${{ env.PROJECT_ID }}
         GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
       run: |
