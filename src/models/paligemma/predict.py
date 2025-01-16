@@ -54,7 +54,7 @@ def encode_image(image_path: str) -> str:
     img = Image.open(io.BytesIO(img_data))
     if max(img.size) > 1024:
         ratio = 1024.0 / max(img.size)
-        new_size = tuple(int(dim * ratio) for dim in img.size)
+        new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
         img = img.resize(new_size, Image.Resampling.LANCZOS)
         buffer = io.BytesIO()
         img.save(buffer, format="JPEG")
