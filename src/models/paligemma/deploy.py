@@ -48,7 +48,7 @@ def deploy_model(
         serving_container_environment_variables={
             "CKPT_PATH": checkpoint_path,
             "RESOLUTION": resolution,
-            "MODEL_ID": "google/" + model_name,
+            "MODEL_ID": f"google/{model_name}",
         },
     )
     print(
@@ -82,7 +82,7 @@ def deploy_model(
     return model, endpoint
 
 
-def main():
+def main() -> None:
     """Deploy PaLIGemma model to Vertex AI."""
     # Initialize Vertex AI
     aiplatform.init(project=PROJECT_ID, location=REGION)
