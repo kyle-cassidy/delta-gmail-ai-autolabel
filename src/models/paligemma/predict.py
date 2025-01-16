@@ -5,18 +5,18 @@
 import base64
 import io
 import re
-from typing import Dict, List, Sequence, Tuple, Union, Any
+from typing import Dict, List, Sequence, Tuple, Union, Any, Optional
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import requests
+import requests  # type: ignore
 from google.cloud import aiplatform
 from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
 from PIL import Image
 from google.api_core import retry, exceptions
-import grpc
+import grpc  # type: ignore
 import logging
 import time
 import os
@@ -51,11 +51,11 @@ def encode_image(image_path: str) -> str:
             img_data = f.read()
 
     # Resize image if needed (Vertex AI has request size limits)
-    img = Image.open(io.BytesIO(img_data))
+    img = Image.open(io.BytesIO(img_data))  # type: ignore
     if max(img.size) > 1024:
         ratio = 1024.0 / max(img.size)
         new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
-        img = img.resize(new_size, Image.Resampling.LANCZOS)
+        img = img.resize(new_size, Image.Resampling.LANCZOS)  # type: ignore
         buffer = io.BytesIO()
         img.save(buffer, format="JPEG")
         img_data = buffer.getvalue()
@@ -63,11 +63,12 @@ def encode_image(image_path: str) -> str:
     return base64.b64encode(img_data).decode("utf-8")
 
 
-def make_prediction(instances, max_retries=3, delay=1):
+def make_prediction(
+    instances: List[Dict[str, Any]], max_retries: int = 3, delay: int = 1
+) -> Any:
     for attempt in range(max_retries):
         try:
-            response = endpoint.predict(instances=instances)
-            return response
+            return endpoint.predict(instances=instances)
         except Exception as e:
             logging.error(f"Attempt {attempt + 1} failed: {e}")
             if attempt < max_retries - 1:
