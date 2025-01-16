@@ -22,6 +22,7 @@ jobs:
       REGION: us-central1
       ENDPOINT_ID: 3233752757731065856
       GOOGLE_CLOUD_PROJECT: gmail-ai-autolabel
+      VERTEX_AI_ENDPOINT: projects/gmail-ai-autolabel/locations/us-central1/endpoints/3233752757731065856
     
     steps:
     - uses: actions/checkout@v4
@@ -53,10 +54,17 @@ jobs:
         pip install -r requirements/test.txt
         pip install -e .
     
+    - name: Initialize Vertex AI
+      run: |
+        gcloud auth configure-docker us-central1-docker.pkg.dev
+        gcloud auth print-access-token
+        gcloud config set project ${{ env.PROJECT_ID }}
+        
     - name: Run tests
       env:
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
         GCLOUD_PROJECT: ${{ env.PROJECT_ID }}
+        GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
       run: |
         gcloud auth list
         gcloud config list
