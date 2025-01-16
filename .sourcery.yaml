@@ -1,0 +1,7 @@
+ignore:
+  - tests/**/*.py:no-loop-in-tests
+
+rules:
+  python:
+    no-loop-in-tests:
+      enabled: false 
