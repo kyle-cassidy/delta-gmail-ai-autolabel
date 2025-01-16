@@ -56,16 +56,32 @@ jobs:
     
     - name: Initialize Vertex AI
       run: |
-        gcloud auth configure-docker us-central1-docker.pkg.dev
-        gcloud auth print-access-token
-        gcloud config set project ${{ env.PROJECT_ID }}
+        # Write credentials to a file that Vertex AI can read
+        echo '${{ secrets.GOOGLE_CREDENTIALS }}' > vertex_credentials.json
+        # Set environment variables
+        export GOOGLE_APPLICATION_CREDENTIALS="$PWD/vertex_credentials.json"
+        export GOOGLE_CLOUD_PROJECT="${{ env.PROJECT_ID }}"
+        # Verify credentials
+        gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+        # Initialize Vertex AI client
+        python -c "
+        from google.cloud import aiplatform
+        aiplatform.init(
+            project='${{ env.PROJECT_ID }}',
+            location='${{ env.REGION }}',
+            credentials_dict=eval(open('vertex_credentials.json').read())
+        )
+        "
         
     - name: Run tests
       env:
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+        GOOGLE_APPLICATION_CREDENTIALS: vertex_credentials.json
         GCLOUD_PROJECT: ${{ env.PROJECT_ID }}
         GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
       run: |
-        gcloud auth list
-        gcloud config list
-        pytest tests/ --cov=src --cov-report=xml 
+        pytest tests/ --cov=src --cov-report=xml
+        
+    - name: Cleanup
+      if: always()
+      run: |
+        rm -f vertex_credentials.json 
