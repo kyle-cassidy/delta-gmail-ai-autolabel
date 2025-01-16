@@ -13,6 +13,11 @@ jobs:
       matrix:
         python-version: ['3.9', '3.10']
     
+    env:
+      PROJECT_ID: gmail-ai-autolabel
+      REGION: us-central1
+      ENDPOINT_ID: 3233752757731065856
+    
     steps:
     - uses: actions/checkout@v4
     
