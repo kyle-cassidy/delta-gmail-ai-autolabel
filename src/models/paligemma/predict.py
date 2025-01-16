@@ -43,13 +43,14 @@ endpoint = aiplatform.Endpoint(ENDPOINT_PATH)
 
 def _resize_image(img: Image.Image, max_size: int = 1024) -> bytes:  # type: ignore
     """Resize image if it exceeds max dimensions while maintaining aspect ratio."""
+    buffer = io.BytesIO()
     if max(img.size) <= max_size:
-        return img.tobytes()
+        img.save(buffer, format="JPEG")
+        return buffer.getvalue()
 
     ratio = max_size / max(img.size)
     new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
     resized_img = img.resize(new_size, Image.Resampling.LANCZOS)  # type: ignore
-    buffer = io.BytesIO()
     resized_img.save(buffer, format="JPEG")
     return buffer.getvalue()
 
