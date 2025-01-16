@@ -1,7 +1,18 @@
+version: '1'
 ignore:
-  - tests/**/*.py:no-loop-in-tests
-
+  - .git
+  - venv
+  - env
 rules:
-  python:
-    no-loop-in-tests:
-      enabled: false 
+  - name: use-fstring
+    enabled: true
+  - name: merge-duplicate-blocks
+    enabled: true
+  - name: inline-immediately-returned-variable
+    enabled: true
+  - name: move-assign-in-if-to-if-exp
+    enabled: true
+  - name: use-assigned-variable
+    enabled: true
+  - name: no-loop-in-tests
+    enabled: false 

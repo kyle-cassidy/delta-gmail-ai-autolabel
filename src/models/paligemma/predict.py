@@ -91,11 +91,11 @@ def make_prediction(
             return endpoint.predict(instances=instances)
         except Exception as e:
             last_error = e
-            logging.error(f"Attempt {attempt + 1} failed: {e}")
+            logging.error(f"Attempt {attempt + 1} failed: {e}")  # noqa: RUF100
             if attempt < max_retries:  # Only sleep if we're going to retry
                 time.sleep(delay)
                 continue
-            raise last_error  # Re-raise the last error we caught
+            raise last_error  # Directly raise the last error instead of creating a new one
 
 
 if __name__ == "__main__":
