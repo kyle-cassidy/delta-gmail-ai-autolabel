@@ -21,6 +21,7 @@ jobs:
       PROJECT_ID: gmail-ai-autolabel
       REGION: us-central1
       ENDPOINT_ID: 3233752757731065856
+      GOOGLE_CLOUD_PROJECT: gmail-ai-autolabel
     
     steps:
     - uses: actions/checkout@v4
@@ -36,9 +37,14 @@ jobs:
       with:
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
         create_credentials_file: true
-    
+        export_environment_variables: true
+        cleanup_credentials: true
+        
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+        install_components: 'beta'
     
     - name: Install dependencies
       run: |
@@ -47,5 +53,10 @@ jobs:
         pip install -e .
     
     - name: Run tests
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+        GCLOUD_PROJECT: ${{ env.PROJECT_ID }}
       run: |
+        gcloud auth list
+        gcloud config list
         pytest tests/ --cov=src --cov-report=xml 
