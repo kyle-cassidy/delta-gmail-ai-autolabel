@@ -1,8 +1,8 @@
 from src.client.gmail import Gmail
-from typing import Bool
+from typing import bool
 
 
-def test_connectivity() -> Bool:
+def test_connectivity() -> bool:
     """Basic connectivity test for Gmail API"""
     try:
         # Initialize with our existing credentials
