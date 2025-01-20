@@ -67,3 +67,5 @@ credentials/*.json
 notebooks/*
 
 vertex-ai-samples/
+
+.cursorrules
