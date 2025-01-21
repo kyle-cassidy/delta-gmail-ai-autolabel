@@ -31,22 +31,60 @@ class AutoLabeler:
 
         return self._labels_cache[label_name]
 
-    def process_unread_messages(self, max_messages: int = 100) -> None:
+    def process_unread_messages(self, max_messages: int = 50) -> None:
         """Process unread messages and apply labels."""
-        messages = self.gmail.get_unread_inbox()[:max_messages]
+        messages = self.gmail.get_unread_inbox(max_messages=max_messages)
 
         for message in messages:
-            # Extract sender from message
-            from_address = ""
+            # Extract from address from headers
+            from_address = None
             for header in message.headers:
                 if header["name"].lower() == "from":
                     from_address = header["value"]
                     break
 
+            if not from_address:
+                print(
+                    f"WARNING: Skipping message - no from address found: {message.id}"
+                )
+                continue
+
             subject = message.subject or ""
 
+            # Log messages with missing content for investigation
+            if not message.plain and not message.html:
+                print(f"WARNING: Message has no content - ID: {message.id}")
+                print(f"From: {from_address}")
+                print(f"Subject: {subject}")
+                if message.attachments:
+                    print(f"Has {len(message.attachments)} attachments")
+                print("---")
+
+            # Get content and attachments for classification
+            content = {
+                "plain": message.plain,
+                "html": message.html,
+                "snippet": message.snippet,
+                "has_attachments": bool(message.attachments),
+                "attachments": (
+                    [
+                        {
+                            "filename": att.filename,
+                            "mime_type": att.mime_type,
+                            "size": att.size,
+                        }
+                        for att in message.attachments
+                    ]
+                    if message.attachments
+                    else []
+                ),
+            }
+
             # Get appropriate labels
-            labels_to_add = self.labeler.get_labels(from_address, subject)
+            labels_to_add = self.labeler.get_labels(
+                from_address=from_address, subject=subject, content=content
+            )
+
             if not labels_to_add:
                 continue
 
