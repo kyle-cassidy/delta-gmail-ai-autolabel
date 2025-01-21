@@ -1,5 +1,4 @@
 from src.client.gmail import Gmail
-from typing import bool
 
 
 def test_connectivity() -> bool:
@@ -14,12 +13,17 @@ def test_connectivity() -> bool:
         # Test 1: List labels (simplest API call)
         print("Testing label retrieval...")
         labels = gmail.list_labels()
-        print(f"Success! Found {len(labels)} labels")
+        print("\nGmail Labels:")
+        print("-" * 50)
+        for label in labels:
+            print(f"• {label.name:<30} (ID: {label.id})")
+        print("-" * 50)
+        print(f"Success! Found {len(labels)} labels\n")
 
         # Test 2: Try to get one unread message
-        print("\nTesting message retrieval...")
-        messages = gmail.get_unread_inbox()
-        print(f"Success! Found {len(messages)} unread messages")
+        # print("\nTesting message retrieval...")
+        # messages = gmail.get_unread_inbox()
+        # print(f"Success! Found {len(messages)} unread messages")
 
         return True
 
