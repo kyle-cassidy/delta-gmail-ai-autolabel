@@ -35,13 +35,17 @@ class EmailSampler:
         """Extract key metadata from a Gmail message."""
         metadata = {}
 
-        # Get raw message data
-        raw_message = (
-            self.gmail.service.users()
-            .messages()
-            .get(userId="me", id=message.id, format="full")
-            .execute()
-        )
+        # Handle both Message objects and raw message dictionaries
+        if isinstance(message, dict):
+            raw_message = message
+        else:
+            # Get raw message data
+            raw_message = (
+                self.gmail.service.users()
+                .messages()
+                .get(userId="me", id=message.id, format="full")
+                .execute()
+            )
 
         # Extract headers into a more usable format
         headers = {}
@@ -101,9 +105,51 @@ class EmailSampler:
 
         return metadata
 
-    def download_sample_emails(self, max_messages: int = 100) -> List[Dict[str, Any]]:
+    def get_messages_by_label(
+        self, label_name: str, max_messages: int = 100
+    ) -> List[Any]:
+        """Get messages with a specific label."""
+        # Get label ID
+        labels = self.gmail.list_labels()
+        label_id = None
+        for label in labels:
+            if label.name == label_name:
+                label_id = label.id
+                break
+
+        if not label_id:
+            raise ValueError(f"Label '{label_name}' not found")
+
+        # Get messages with this label
+        query = f"label:{label_name}"
+        messages = (
+            self.gmail.service.users()
+            .messages()
+            .list(userId="me", q=query, maxResults=max_messages)
+            .execute()
+        )
+
+        if "messages" not in messages:
+            return []
+
+        # Get full message details
+        return [
+            self.gmail.service.users()
+            .messages()
+            .get(userId="me", id=msg["id"])
+            .execute()
+            for msg in messages["messages"][:max_messages]
+        ]
+
+    def download_sample_emails(
+        self, max_messages: int = 100, label_filter: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Download and store sample emails."""
-        messages = self.gmail.get_unread_inbox()[:max_messages]
+        if label_filter:
+            messages = self.get_messages_by_label(label_filter, max_messages)
+        else:
+            messages = self.gmail.get_unread_inbox()[:max_messages]
+
         samples = []
 
         for i, message in enumerate(messages):
@@ -121,6 +167,9 @@ class EmailSampler:
             json.dump(samples, f, indent=2)
 
         print(f"Downloaded {len(samples)} sample emails to {self.output_dir}")
+        if label_filter:
+            print(f"Filtered by label: {label_filter}")
+
         return samples
 
     def analyze_domains(self, samples: List[Dict[str, Any]]) -> Dict[str, int]:
