@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<email_classification_system>
+    <context>
+        We are building an email classification system for a company managing fertilizer and biostimulant product registrations. The system needs to automatically classify incoming emails in a shared Gmail inbox, applying appropriate labels based on multiple dimensions including client, product, state regulator, and document type.
+    </context>
+
+    <data_sources>
+        <airtable_tables>
+            <table name="Clients" description="Company information and contact details"/>
+            <table name="Products" description="Fertilizer and biostimulant products"/>
+            <table name="RegistrationRequirements" description="State-specific registration rules"/>
+            <table name="RegistrationTracking" description="Status of product registrations"/>
+            <table name="StateRegulators" description="State regulator contact information"/>
+        </airtable_tables>
+        
+        <sample_data_requirements>
+            <email_samples>
+                <!-- Include 3-5 representative email examples showing:
+                     - State regulator communications
+                     - Client communications
+                     - Registration notifications -->
+                <headers_needed>
+                    - message_id
+                    - thread_id
+                    - from
+                    - to
+                    - subject
+                    - date
+                    - headers (full JSON)
+                    - label_ids
+                    - labels
+                </headers_needed>
+            </email_samples>
+        </sample_data_requirements>
+    </data_sources>
+
+    <requirements>
+        <classification_dimensions>
+            <dimension name="client" priority="high">
+                <sources>
+                    - Email domain
+                    - Company name mentions
+                    - Client table matching
+                </sources>
+            </dimension>
+            <dimension name="product" priority="medium">
+                <sources>
+                    - Product name mentions
+                    - Registration numbers
+                    - Product table matching
+                </sources>
+            </dimension>
+            <dimension name="state" priority="high">
+                <sources>
+                    - Regulator email domains
+                    - State mentions
+                    - Agency names
+                </sources>
+            </dimension>
+            <dimension name="document_type" priority="medium">
+                <sources>
+                    - Subject patterns
+                    - Content analysis
+                    - Document keywords
+                </sources>
+            </dimension>
+        </classification_dimensions>
+
+        <technical_stack>
+            <backend>
+                - FastAPI
+                - Python
+                - Gmail API
+            </backend>
+            <storage>
+                - Airtable (existing)
+                - Local configuration files
+            </storage>
+        </technical_stack>
+
+        <future_integrations>
+            <integration>Update Airtable records based on classifications</integration>
+            <integration>Route attachments to Google Drive</integration>
+            <integration>Track registration status changes</integration>
+        </future_integrations>
+    </requirements>
+
+    <configuration>
+        <initial_approach>
+            Start with simple pattern matching and explicit rules
+            Support regex and exact matches
+            Allow per-rule confidence weights
+            Enable multi-label classification
+        </initial_approach>
+        
+        <configuration_format>
+            YAML for human readability and easy updates
+            Support for hierarchical label structures
+            Flexible pattern matching rules
+        </configuration_format>
+    </configuration>
+
+    <success_criteria>
+        <criterion>Every incoming email receives at least one classification</criterion>
+        <criterion>High-confidence classifications (>80%) are automatically applied</criterion>
+        <criterion>Low-confidence matches are logged for review</criterion>
+        <criterion>Classification rules are easily maintainable</criterion>
+    </success_criteria>
+</email_classification_system>

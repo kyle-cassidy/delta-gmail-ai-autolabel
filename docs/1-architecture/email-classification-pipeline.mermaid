@@ -1,0 +1,39 @@
+flowchart TD
+    Start([Email Received]) --> FetchEmail[Fetch Email Metadata & Content]
+    
+    subgraph PreProcess[Pre-Processing]
+        direction TB
+        FetchEmail --> ParseEmail[Parse Email Headers & Content]
+        ParseEmail --> ExtractMetadata[Extract Key Metadata]
+        ExtractMetadata --> Normalize[Normalize Text & Headers]
+    end
+    
+    subgraph Classification[Multi-Layer Classification]
+        direction TB
+        Normalize --> |Parallel Processing| ClassifyClient[Client Classification]
+        Normalize --> |Parallel Processing| ClassifyProduct[Product Classification]
+        Normalize --> |Parallel Processing| ClassifyState[State/Regulator Classification]
+        Normalize --> |Parallel Processing| ClassifyDocType[Document Type Classification]
+        
+        subgraph Scoring[Classification Scoring]
+            direction LR
+            MatchPatterns[Pattern Matching] --> AssignConfidence[Assign Confidence Scores]
+            AssignConfidence --> CombineScores[Combine Layer Scores]
+        end
+        
+        ClassifyClient --> Scoring
+        ClassifyProduct --> Scoring
+        ClassifyState --> Scoring
+        ClassifyDocType --> Scoring
+    end
+    
+    subgraph PostProcess[Post-Processing]
+        direction TB
+        Scoring --> FilterResults[Filter Low Confidence]
+        FilterResults --> AssignLabels[Assign Gmail Labels]
+        AssignLabels --> LogResults[Log Classification Results]
+    end
+    
+    style Classification fill:#f9f,stroke:#333
+    style Scoring fill:#bbf,stroke:#333
+    style PreProcess fill:#dfd,stroke:#333
