@@ -9,6 +9,7 @@ import json
 import asyncio
 from .base import BaseDocumentClassifier, ClassificationResult
 from .domain_config import DomainConfig
+import PyPDF2
 
 class GeminiClassifier(BaseDocumentClassifier):
     """Document classifier using Google's Gemini Flash model."""
@@ -40,7 +41,31 @@ class GeminiClassifier(BaseDocumentClassifier):
             file_path = Path(file_path)
             if not file_path.exists():
                 raise FileNotFoundError(f"File not found: {file_path}")
-                
+            
+            # Check file size (20MB limit)
+            file_size = file_path.stat().st_size
+            if file_size > 20 * 1024 * 1024:  # 20MB in bytes
+                raise ValueError("File size exceeds 20MB limit")
+            
+            # Check page count for PDFs
+            if file_path.suffix.lower() == '.pdf':
+                with open(file_path, 'rb') as f:
+                    pdf = PyPDF2.PdfReader(f)
+                    if len(pdf.pages) > 3600:
+                        raise ValueError("Document exceeds 3600 page limit")
+            
+            # Read file content and convert to base64
+            import base64
+            import mimetypes
+            
+            mime_type, _ = mimetypes.guess_type(str(file_path))
+            if not mime_type:
+                mime_type = 'application/octet-stream'
+            
+            with open(file_path, 'rb') as f:
+                file_content = f.read()
+                file_data = base64.b64encode(file_content).decode('utf-8')
+            
             # Prepare the prompt for Gemini
             prompt = """
             Please analyze this document and extract the following information in JSON format:
@@ -65,18 +90,29 @@ class GeminiClassifier(BaseDocumentClassifier):
             """
             
             # Process with Gemini
-            with open(file_path, 'rb') as f:
-                response = self.model.generate_content([prompt, f])
-                
+            response = self.model.generate_content([{
+                'parts': [
+                    {'text': prompt},
+                    {'inline_data': {
+                        'mime_type': mime_type,
+                        'data': file_data
+                    }}
+                ]
+            }])
+            
             # Parse and validate the response
             try:
                 raw_result = json.loads(response.text)
                 return self._convert_to_classification_result(raw_result)
             except json.JSONDecodeError:
-                raise ValueError("Failed to parse Gemini response as JSON")
-                
+                return self._create_error_result("Failed to parse Gemini response as JSON")
+            
+        except FileNotFoundError as e:
+            raise  # Re-raise FileNotFoundError directly
+        except ValueError as e:
+            raise  # Re-raise ValueError directly
         except Exception as e:
-            raise Exception(f"Classification failed: {str(e)}")
+            return self._create_error_result(str(e))
             
     async def classify_batch(self, file_paths: List[Union[str, Path]], 
                            max_concurrent: int = 5) -> List[ClassificationResult]:
@@ -242,16 +278,13 @@ class GeminiClassifier(BaseDocumentClassifier):
         return flags
         
     def _create_error_result(self, error_message: str) -> ClassificationResult:
-        """Create a ClassificationResult for error cases."""
+        """Create a ClassificationResult instance for error cases."""
         return ClassificationResult(
             document_type=None,
             confidence=0.0,
             entities={'companies': [], 'products': [], 'states': []},
             key_fields={'dates': [], 'registration_numbers': [], 'amounts': []},
-            metadata={
-                'error': error_message,
-                'classifier': self.get_classifier_info()['name']
-            },
+            metadata={'error': error_message, 'classifier': 'Gemini Flash Classifier'},
             summary=None,
             flags=['CLASSIFICATION_ERROR']
         ) 

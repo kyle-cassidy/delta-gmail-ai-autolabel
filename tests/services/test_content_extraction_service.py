@@ -1,159 +1,94 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from src.services.content_extraction_service import ContentExtractionService
 
 @pytest.fixture
-def mock_storage():
-    return AsyncMock()
+def mock_response():
+    response = MagicMock()
+    response.text = """{
+        "document_type": "registration",
+        "entities": {
+            "companies": ["Test Corp"],
+            "products": ["Test Product"],
+            "states": ["CA"]
+        },
+        "key_fields": {
+            "dates": ["2024-02-11"],
+            "registration_numbers": ["CA-2024-01"],
+            "amounts": ["$1000.00"]
+        },
+        "tables": [],
+        "summary": "Test document"
+    }"""
+    return response
 
 @pytest.fixture
-def content_extraction_service(mock_storage):
-    return ContentExtractionService(storage_service=mock_storage)
+def mock_genai():
+    with patch('google.generativeai') as mock:
+        mock_model = MagicMock()
+        mock.GenerativeModel.return_value = mock_model
+        yield mock
 
 @pytest.fixture
-def sample_message():
-    message = MagicMock()
-    message.id = "test123"
-    message.plain = "This is a plain text email"
-    message.html = "<div>This is an HTML email</div>"
-    message.attachments = []
-    return message
+def content_extraction_service(mock_genai, mock_response):
+    with patch('google.generativeai.GenerativeModel.generate_content', return_value=mock_response):
+        service = ContentExtractionService(api_key="test_key")
+        yield service
 
 @pytest.mark.asyncio
-async def test_extract_plain_text(content_extraction_service, sample_message):
-    # Execute
-    content = await content_extraction_service.extract_content(sample_message)
+async def test_extract_content(content_extraction_service, mock_response, tmp_path):
+    # Create a test file
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"Test content")
     
-    # Verify
-    assert content["text"] == sample_message.plain
-    assert content["format"] == "plain"
-    assert "metadata" in content
+    # Extract content
+    result = await content_extraction_service.extract_content(test_file)
+    
+    # Verify structure
+    assert "document_type" in result
+    assert "entities" in result
+    assert "key_fields" in result
+    assert "tables" in result
+    assert "summary" in result
+    
+    # Verify content
+    assert result["document_type"] == "registration"
+    assert "Test Corp" in result["entities"]["companies"]
+    assert "CA" in result["entities"]["states"]
+    assert "CA-2024-01" in result["key_fields"]["registration_numbers"]
 
 @pytest.mark.asyncio
-async def test_extract_html_content(content_extraction_service, sample_message):
-    # Setup
-    sample_message.plain = None
+async def test_batch_extract(content_extraction_service, mock_response, tmp_path):
+    # Create test files
+    files = []
+    for i in range(3):
+        test_file = tmp_path / f"test_{i}.pdf"
+        test_file.write_bytes(b"Test content")
+        files.append(test_file)
     
-    # Execute
-    content = await content_extraction_service.extract_content(sample_message)
+    # Extract content from batch
+    results = await content_extraction_service.batch_extract(files)
     
-    # Verify
-    assert "This is an HTML email" in content["text"]
-    assert content["format"] == "html"
-    assert "metadata" in content
+    # Verify results
+    assert len(results) == 3
+    for result in results:
+        assert result["success"]
+        assert result["data"]["document_type"] == "registration"
+        assert "Test Corp" in result["data"]["entities"]["companies"]
 
 @pytest.mark.asyncio
-async def test_extract_pdf_content(content_extraction_service, sample_message):
-    # Setup
-    attachment = MagicMock()
-    attachment.filename = "document.pdf"
-    attachment.content = b"%PDF-1.4 test content"
-    sample_message.attachments = [attachment]
+async def test_error_handling(content_extraction_service, tmp_path):
+    # Test with non-existent file
+    with pytest.raises(Exception) as exc_info:
+        await content_extraction_service.extract_content("nonexistent.pdf")
+    assert "File not found" in str(exc_info.value)
     
-    # Execute
-    content = await content_extraction_service.extract_content(sample_message)
+    # Test with invalid JSON response
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"Test content")
     
-    # Verify
-    assert "attachments" in content
-    assert len(content["attachments"]) == 1
-    assert content["attachments"][0]["type"] == "pdf"
-    assert "extracted_text" in content["attachments"][0]
-
-@pytest.mark.asyncio
-async def test_extract_image_content(content_extraction_service, sample_message):
-    # Setup
-    attachment = MagicMock()
-    attachment.filename = "image.jpg"
-    attachment.content = b"image data"
-    sample_message.attachments = [attachment]
-    
-    # Execute
-    content = await content_extraction_service.extract_content(sample_message)
-    
-    # Verify
-    assert "attachments" in content
-    assert len(content["attachments"]) == 1
-    assert content["attachments"][0]["type"] == "image"
-    assert "ocr_text" in content["attachments"][0]
-
-@pytest.mark.asyncio
-async def test_extract_multiple_attachments(content_extraction_service, sample_message):
-    # Setup
-    attachments = [
-        MagicMock(filename="doc1.pdf", content=b"%PDF-1.4 content1"),
-        MagicMock(filename="doc2.pdf", content=b"%PDF-1.4 content2"),
-        MagicMock(filename="image.jpg", content=b"image data")
-    ]
-    sample_message.attachments = attachments
-    
-    # Execute
-    content = await content_extraction_service.extract_content(sample_message)
-    
-    # Verify
-    assert len(content["attachments"]) == 3
-    assert sum(1 for a in content["attachments"] if a["type"] == "pdf") == 2
-    assert sum(1 for a in content["attachments"] if a["type"] == "image") == 1
-
-@pytest.mark.asyncio
-async def test_extract_with_embedded_images(content_extraction_service, sample_message):
-    # Setup
-    sample_message.html = """
-        <div>Email content with embedded image:
-            <img src="data:image/jpeg;base64,/9j/4AAQSkZJRg==" />
-        </div>
-    """
-    
-    # Execute
-    content = await content_extraction_service.extract_content(sample_message)
-    
-    # Verify
-    assert "embedded_images" in content
-    assert len(content["embedded_images"]) == 1
-    assert "ocr_text" in content["embedded_images"][0]
-
-@pytest.mark.asyncio
-async def test_extract_with_urls(content_extraction_service, sample_message):
-    # Setup
-    sample_message.html = """
-        <div>Email with links:
-            <a href="https://example.com/doc1.pdf">Document 1</a>
-            <a href="https://example.com/doc2.pdf">Document 2</a>
-        </div>
-    """
-    
-    # Execute
-    content = await content_extraction_service.extract_content(sample_message)
-    
-    # Verify
-    assert "urls" in content
-    assert len(content["urls"]) == 2
-    assert all(url.startswith("https://") for url in content["urls"])
-
-@pytest.mark.asyncio
-async def test_extract_with_tables(content_extraction_service, sample_message):
-    # Setup
-    sample_message.html = """
-        <table>
-            <tr><td>Name</td><td>Value</td></tr>
-            <tr><td>Item 1</td><td>100</td></tr>
-        </table>
-    """
-    
-    # Execute
-    content = await content_extraction_service.extract_content(sample_message)
-    
-    # Verify
-    assert "tables" in content
-    assert len(content["tables"]) == 1
-    assert isinstance(content["tables"][0], list)  # Should be a 2D array
-
-@pytest.mark.asyncio
-async def test_content_storage(content_extraction_service, sample_message, mock_storage):
-    # Execute
-    content = await content_extraction_service.extract_content(sample_message)
-    
-    # Verify
-    mock_storage.store_extracted_content.assert_called_once_with(
-        message_id=sample_message.id,
-        content=content
-    )
+    with patch('google.generativeai.GenerativeModel.generate_content') as mock_generate:
+        mock_generate.return_value = MagicMock(text="Invalid JSON")
+        with pytest.raises(Exception) as exc_info:
+            await content_extraction_service.extract_content(test_file)
+        assert "Failed to parse" in str(exc_info.value)

@@ -1,0 +1,29 @@
+# Company Code Mappings
+# Maps company names to their standardized 3-letter codes
+# Format:
+#   CODE:
+#     name: "Full Company Name"
+#     aliases: ["Alternative Names", "Common Misspellings"]
+
+companies:
+  EEA:
+    name: "Elemental Enzymes Agriculture"
+    aliases: 
+      - "Elemental Enzymes"
+      - "Elemental Enzymes Ag"
+      - "EE Agriculture"
+  BOR:
+    name: "US Borax"
+    aliases:
+      - "U.S. Borax"
+      - "U.S. Borax Inc"
+      - "US Borax Inc"
+      - "Rio Tinto Borax"
+  # Add more companies as needed
+  
+# Validation rules
+validation:
+  code_pattern: "^[A-Z]{3}$"  # Must be exactly 3 uppercase letters
+  required_fields:
+    - name
+    - aliases 

@@ -9,46 +9,35 @@ import yaml
 import re
 
 class DomainConfig:
-    """Loads and provides access to domain-specific configuration."""
+    """Manages domain-specific configuration for document classification."""
     
     def __init__(self, config_dir: Optional[Path] = None):
         """
         Initialize domain configuration.
         
         Args:
-            config_dir: Path to configuration directory, defaults to project's config dir
+            config_dir: Optional path to configuration directory
         """
-        self.config_dir = config_dir or Path(__file__).parents[3] / "config"
-        self._load_configurations()
+        self.config_dir = config_dir or Path("config")
         
-    def _load_configurations(self) -> None:
-        """Load all configuration files."""
-        # Load product categories
-        self.product_categories = self._load_yaml("product_categories.yaml")
-        
-        # Load regulatory actions
+        # Load configurations
         self.regulatory_actions = self._load_yaml("regulatory_actions.yaml")
-        
-        # Load state-specific rules
+        self.product_categories = self._load_yaml("product_categories.yaml")
         self.state_specific = self._load_yaml("state_specific.yaml")
-        
-        # Load relationships
-        self.relationships = self._load_yaml("relationships.yaml")
-        
-        # Load validation rules
         self.validation_rules = self._load_yaml("validation_rules.yaml")
+        self.relationships = self._load_yaml("relationships.yaml")
+        self.state_patterns = self._load_yaml("state_patterns.yaml")
         
-        # Compile regex patterns for efficiency
+        # Compile regex patterns
         self._compile_patterns()
         
     def _load_yaml(self, filename: str) -> Dict:
-        """Load a YAML file from the config directory."""
-        file_path = self.config_dir / filename
-        if not file_path.exists():
+        """Load YAML configuration file."""
+        try:
+            with open(self.config_dir / filename) as f:
+                return yaml.safe_load(f) or {}
+        except FileNotFoundError:
             return {}
-        
-        with open(file_path, 'r') as f:
-            return yaml.safe_load(f)
             
     def _compile_patterns(self) -> None:
         """Compile regex patterns from configurations."""
@@ -74,8 +63,8 @@ class DomainConfig:
                         pattern["regex"], re.IGNORECASE
                     )
                     
-        # Add state-specific patterns
-        for state_code, state_info in self.state_specific.get("states", {}).items():
+        # Compile state patterns from state_patterns.yaml
+        for state_code, state_info in self.state_patterns.get("states", {}).items():
             if "patterns" in state_info:
                 for pattern in state_info["patterns"]:
                     self.patterns["states"][state_code] = re.compile(

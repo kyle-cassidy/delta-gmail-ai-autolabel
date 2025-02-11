@@ -153,11 +153,11 @@ product_categories:
       beneficial_substance:  # Added, covers multiple subcategories.
         canonical_name: "Beneficial Substance"
         state_terms:
-            - term: "Beneficial Substance"
-              states:  ["AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WV", "WY"]
+          - term: "Beneficial Substance"
+            states: ["AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WV", "WY"]
             patterns:
-                - regex: "(?i)\\bbeneficial\\s+substance\\b"
-                  confidence: 0.9
+              - regex: "(?i)\\bbeneficial\\s+substance\\b"
+                confidence: 0.9
 
   liming_material:
     canonical_name: "Liming Material"

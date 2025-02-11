@@ -1,0 +1,254 @@
+# state_patterns.yaml
+# Maps state codes to their full names and patterns for recognition
+
+states:
+  AL:
+    name: "Alabama"
+    patterns:
+      - regex: "(?i)\\b(AL|Alabama)\\b"
+        confidence: 0.95
+  AK:
+    name: "Alaska"
+    patterns:
+      - regex: "(?i)\\b(AK|Alaska)\\b"
+        confidence: 0.95
+  AZ:
+    name: "Arizona"
+    patterns:
+      - regex: "(?i)\\b(AZ|Arizona)\\b"
+        confidence: 0.95
+  AR:
+    name: "Arkansas"
+    patterns:
+      - regex: "(?i)\\b(AR|Arkansas)\\b"
+        confidence: 0.95
+  CA:
+    name: "California"
+    patterns:
+      - regex: "(?i)\\b(CA|California|Calif)\\b"
+        confidence: 0.95
+  CO:
+    name: "Colorado"
+    patterns:
+      - regex: "(?i)\\b(CO|Colorado)\\b"
+        confidence: 0.95
+  CT:
+    name: "Connecticut"
+    patterns:
+      - regex: "(?i)\\b(CT|Connecticut|Conn)\\b"
+        confidence: 0.95
+  DE:
+    name: "Delaware"
+    patterns:
+      - regex: "(?i)\\b(DE|Delaware|Del)\\b"
+        confidence: 0.95
+  FL:
+    name: "Florida"
+    patterns:
+      - regex: "(?i)\\b(FL|Florida|Fla)\\b"
+        confidence: 0.95
+  GA:
+    name: "Georgia"
+    patterns:
+      - regex: "(?i)\\b(GA|Georgia)\\b"
+        confidence: 0.95
+  HI:
+    name: "Hawaii"
+    patterns:
+      - regex: "(?i)\\b(HI|Hawaii)\\b"
+        confidence: 0.95
+  ID:
+    name: "Idaho"
+    patterns:
+      - regex: "(?i)\\b(ID|Idaho)\\b"
+        confidence: 0.95
+  IL:
+    name: "Illinois"
+    patterns:
+      - regex: "(?i)\\b(IL|Illinois|Ill)\\b"
+        confidence: 0.95
+  IN:
+    name: "Indiana"
+    patterns:
+      - regex: "(?i)\\b(IN|Indiana|Ind)\\b"
+        confidence: 0.95
+  IA:
+    name: "Iowa"
+    patterns:
+      - regex: "(?i)\\b(IA|Iowa)\\b"
+        confidence: 0.95
+  KS:
+    name: "Kansas"
+    patterns:
+      - regex: "(?i)\\b(KS|Kansas|Kans)\\b"
+        confidence: 0.95
+  KY:
+    name: "Kentucky"
+    patterns:
+      - regex: "(?i)\\b(KY|Kentucky|Ken)\\b"
+        confidence: 0.95
+  LA:
+    name: "Louisiana"
+    patterns:
+      - regex: "(?i)\\b(LA|Louisiana)\\b"
+        confidence: 0.95
+  ME:
+    name: "Maine"
+    patterns:
+      - regex: "(?i)\\b(ME|Maine)\\b"
+        confidence: 0.95
+  MD:
+    name: "Maryland"
+    patterns:
+      - regex: "(?i)\\b(MD|Maryland)\\b"
+        confidence: 0.95
+  MA:
+    name: "Massachusetts"
+    patterns:
+      - regex: "(?i)\\b(MA|Massachusetts|Mass)\\b"
+        confidence: 0.95
+  MI:
+    name: "Michigan"
+    patterns:
+      - regex: "(?i)\\b(MI|Michigan|Mich)\\b"
+        confidence: 0.95
+  MN:
+    name: "Minnesota"
+    patterns:
+      - regex: "(?i)\\b(MN|Minnesota|Minn)\\b"
+        confidence: 0.95
+  MS:
+    name: "Mississippi"
+    patterns:
+      - regex: "(?i)\\b(MS|Mississippi|Miss)\\b"
+        confidence: 0.95
+  MO:
+    name: "Missouri"
+    patterns:
+      - regex: "(?i)\\b(MO|Missouri)\\b"
+        confidence: 0.95
+  MT:
+    name: "Montana"
+    patterns:
+      - regex: "(?i)\\b(MT|Montana|Mont)\\b"
+        confidence: 0.95
+  NE:
+    name: "Nebraska"
+    patterns:
+      - regex: "(?i)\\b(NE|Nebraska|Nebr)\\b"
+        confidence: 0.95
+  NV:
+    name: "Nevada"
+    patterns:
+      - regex: "(?i)\\b(NV|Nevada|Nev)\\b"
+        confidence: 0.95
+  NH:
+    name: "New Hampshire"
+    patterns:
+      - regex: "(?i)\\b(NH|New\\s+Hampshire)\\b"
+        confidence: 0.95
+  NJ:
+    name: "New Jersey"
+    patterns:
+      - regex: "(?i)\\b(NJ|New\\s+Jersey)\\b"
+        confidence: 0.95
+  NM:
+    name: "New Mexico"
+    patterns:
+      - regex: "(?i)\\b(NM|New\\s+Mexico)\\b"
+        confidence: 0.95
+  NY:
+    name: "New York"
+    patterns:
+      - regex: "(?i)\\b(NY|New\\s+York)\\b"
+        confidence: 0.95
+  NC:
+    name: "North Carolina"
+    patterns:
+      - regex: "(?i)\\b(NC|North\\s+Carolina)\\b"
+        confidence: 0.95
+  ND:
+    name: "North Dakota"
+    patterns:
+      - regex: "(?i)\\b(ND|North\\s+Dakota)\\b"
+        confidence: 0.95
+  OH:
+    name: "Ohio"
+    patterns:
+      - regex: "(?i)\\b(OH|Ohio)\\b"
+        confidence: 0.95
+  OK:
+    name: "Oklahoma"
+    patterns:
+      - regex: "(?i)\\b(OK|Oklahoma|Okla)\\b"
+        confidence: 0.95
+  OR:
+    name: "Oregon"
+    patterns:
+      - regex: "(?i)\\b(OR|Oregon)\\b"
+        confidence: 0.95
+  PA:
+    name: "Pennsylvania"
+    patterns:
+      - regex: "(?i)\\b(PA|Pennsylvania|Penn)\\b"
+        confidence: 0.95
+  RI:
+    name: "Rhode Island"
+    patterns:
+      - regex: "(?i)\\b(RI|Rhode\\s+Island)\\b"
+        confidence: 0.95
+  SC:
+    name: "South Carolina"
+    patterns:
+      - regex: "(?i)\\b(SC|South\\s+Carolina)\\b"
+        confidence: 0.95
+  SD:
+    name: "South Dakota"
+    patterns:
+      - regex: "(?i)\\b(SD|South\\s+Dakota)\\b"
+        confidence: 0.95
+  TN:
+    name: "Tennessee"
+    patterns:
+      - regex: "(?i)\\b(TN|Tennessee|Tenn)\\b"
+        confidence: 0.95
+  TX:
+    name: "Texas"
+    patterns:
+      - regex: "(?i)\\b(TX|Texas|Tex)\\b"
+        confidence: 0.95
+  UT:
+    name: "Utah"
+    patterns:
+      - regex: "(?i)\\b(UT|Utah)\\b"
+        confidence: 0.95
+  VT:
+    name: "Vermont"
+    patterns:
+      - regex: "(?i)\\b(VT|Vermont)\\b"
+        confidence: 0.95
+  VA:
+    name: "Virginia"
+    patterns:
+      - regex: "(?i)\\b(VA|Virginia|Va)\\b"
+        confidence: 0.95
+  WA:
+    name: "Washington"
+    patterns:
+      - regex: "(?i)\\b(WA|Washington|Wash)\\b"
+        confidence: 0.95
+  WV:
+    name: "West Virginia"
+    patterns:
+      - regex: "(?i)\\b(WV|West\\s+Virginia)\\b"
+        confidence: 0.95
+  WI:
+    name: "Wisconsin"
+    patterns:
+      - regex: "(?i)\\b(WI|Wisconsin|Wis)\\b"
+        confidence: 0.95
+  WY:
+    name: "Wyoming"
+    patterns:
+      - regex: "(?i)\\b(WY|Wyoming|Wyo)\\b"
+        confidence: 0.95 

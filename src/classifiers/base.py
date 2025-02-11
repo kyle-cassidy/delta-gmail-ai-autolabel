@@ -15,7 +15,7 @@ class ClassificationResult(BaseModel):
     confidence: float
     entities: Dict[str, List[str]]
     key_fields: Dict[str, List[str]]
-    metadata: Dict[str, Union[bool, int, str, List[str]]]
+    metadata: Dict[str, Union[bool, int, float, str, List[str]]]
     summary: str | None
     flags: List[str]
 

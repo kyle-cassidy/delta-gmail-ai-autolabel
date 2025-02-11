@@ -6,18 +6,75 @@ from typing import Dict, List, Optional, Union
 import google.generativeai as genai
 from pathlib import Path
 import json
+import base64
+import mimetypes
 
 class ContentExtractionService:
-    def __init__(self, api_key: Optional[str] = None):
-        """Initialize the Gemini content extraction service."""
-        self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
-        if not self.api_key:
-            raise ValueError("Google API key is required")
+    def __init__(self, api_key: str):
+        """
+        Initialize the content extraction service.
         
-        # Configure the Gemini API
-        genai.configure(api_key=self.api_key)
-        # Initialize the model (using Flash for optimal speed/quality balance)
+        Args:
+            api_key: The Gemini API key
+        """
+        if not api_key:
+            raise ValueError("API key is required")
+            
+        genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel('gemini-pro-vision')
+        
+    def _read_file_as_base64(self, file_path: Path) -> Dict:
+        """
+        Read a file and convert it to a base64-encoded blob with MIME type.
+        
+        Args:
+            file_path: Path to the file
+            
+        Returns:
+            Dict with mime_type and data fields
+        """
+        mime_type, _ = mimetypes.guess_type(str(file_path))
+        if not mime_type:
+            mime_type = 'application/octet-stream'
+            
+        with open(file_path, 'rb') as f:
+            data = base64.b64encode(f.read()).decode('utf-8')
+            
+        return {
+            'mime_type': mime_type,
+            'data': data
+        }
+        
+    def _validate_extraction(self, result: Dict) -> Dict:
+        """
+        Validate and initialize missing fields in extraction result.
+        
+        Args:
+            result: The extraction result to validate
+            
+        Returns:
+            Validated result with all required fields
+        """
+        if not isinstance(result, dict):
+            result = {}
+            
+        # Initialize required top-level fields
+        result.setdefault('document_type', None)
+        result.setdefault('entities', {})
+        result.setdefault('key_fields', {})
+        result.setdefault('tables', [])
+        result.setdefault('summary', None)
+        
+        # Initialize nested fields
+        result['entities'].setdefault('companies', [])
+        result['entities'].setdefault('products', [])
+        result['entities'].setdefault('states', [])
+        
+        result['key_fields'].setdefault('dates', [])
+        result['key_fields'].setdefault('registration_numbers', [])
+        result['key_fields'].setdefault('amounts', [])
+        
+        return result
         
     async def extract_content(self, file_path: Union[str, Path]) -> Dict:
         """
@@ -39,6 +96,9 @@ class ContentExtractionService:
             file_path = Path(file_path)
             if not file_path.exists():
                 raise FileNotFoundError(f"File not found: {file_path}")
+                
+            # Convert file to base64 blob
+            file_blob = self._read_file_as_base64(file_path)
                 
             # Prepare the prompt for Gemini
             prompt = """
@@ -64,9 +124,13 @@ class ContentExtractionService:
             """
             
             # Process with Gemini
-            with open(file_path, 'rb') as f:
-                response = self.model.generate_content([prompt, f])
-                
+            response = self.model.generate_content([{
+                'parts': [
+                    {'text': prompt},
+                    {'inline_data': file_blob}
+                ]
+            }])
+            
             # Parse and validate the response
             try:
                 result = json.loads(response.text)
@@ -77,46 +141,32 @@ class ContentExtractionService:
         except Exception as e:
             raise Exception(f"Content extraction failed: {str(e)}")
             
-    def _validate_extraction(self, result: Dict) -> Dict:
-        """Validate and clean up the extraction results."""
-        required_keys = ['document_type', 'entities', 'key_fields', 'tables', 'summary']
-        
-        # Ensure all required keys exist
-        for key in required_keys:
-            if key not in result:
-                result[key] = None
-                
-        # Ensure nested dictionaries exist
-        if result['entities'] is None:
-            result['entities'] = {'companies': [], 'products': [], 'states': []}
-        if result['key_fields'] is None:
-            result['key_fields'] = {'dates': [], 'registration_numbers': [], 'amounts': []}
-            
-        return result
-
     async def batch_extract(self, file_paths: List[Union[str, Path]]) -> List[Dict]:
         """
-        Process multiple documents in batch.
+        Extract content from multiple documents in batch.
         
         Args:
-            file_paths: List of paths to documents
+            file_paths: List of paths to document files
             
         Returns:
-            List of extraction results, one per document
+            List of dictionaries containing:
+            - success: Whether extraction succeeded
+            - data: Extracted content if successful
+            - error: Error message if failed
         """
         results = []
         for file_path in file_paths:
             try:
-                result = await self.extract_content(file_path)
+                data = await self.extract_content(file_path)
                 results.append({
-                    'file_path': str(file_path),
                     'success': True,
-                    'data': result
+                    'data': data,
+                    'error': None
                 })
             except Exception as e:
                 results.append({
-                    'file_path': str(file_path),
                     'success': False,
+                    'data': None,
                     'error': str(e)
                 })
         return results
