@@ -1,0 +1,185 @@
+regulatory_actions:
+  registration:
+    canonical_name: "Product Registration"
+    description: "The process of registering a specific product with the state for legal sale and distribution."
+    regex: "\\b(?i)(product registration|registration|register|new product|initial registration|label submission|product approval|regulated with license)\\b" # Added "regulated with license"
+    state_terms:
+      - term: "Product Registration"
+        states: []  # General term.
+      - term: "New Registration"  # For new products.
+        states: []
+      - term: "Initial Registration"  # For first-time product entry.
+        states: []
+      - term: "Label Submission"
+        states: ["AL", "AZ", "FL", "GA", "IA", "KS", "LA", "ME", "MO", "NC", "NE", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WV", "WY"]  # States that use this *specific* wording
+      - term: "Registration" # Catch-all
+        states: ["AR", "AZ", "CA", "CO", "CT", "DE", "GA", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WV", "WY"]
+      - term: "Guidance"
+        states: ["CA"] #Seed Treatment Label
+      - term: "Regulated with License"  # Added; seen in FL
+        states: ["FL", "KY"]
+      - term: "No Regulation"
+        states: ["AK", "AR","AZ", "CA", "CO", "CT", "DC", "HI", "IN", "NC", "NY", "SD"]
+      - term: "No registration required. Label submission only" #Specific to AL
+        states: ["AL"]
+
+  licensing:
+    canonical_name: "Company Licensing/Permitting"
+    description: "The process of licensing or permitting a company to manufacture, distribute, or sell regulated products."
+    regex: "\\b(?i)(license|licensing|permit|dealer permit|manufacturer permit|distributor permit|facility license|company license)\\b" # Expanded
+    state_terms:
+      - term: "License"
+        states: ["AR", "CO", "CT", "FL", "GA", "IA", "IL", "KY", "LA", "ME", "MN", "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WV", "WY"]
+      - term: "Permit"
+        states: ["AL","CT","FL", "GA", "MO"]
+      - term: "Fertilizer Dealer Permit" #Specific to AL
+        states: ["AL"]
+      - term: "Fertilizer Manufacturers Permit" #Specific to AL
+        states: ["AL"]
+      - term: "Fertilizing Material License" #CA
+        states: ["CA"]
+      - term: "Commercial Fertilizer License" #AZ
+        states: ["AZ", "GA", "MA"]
+      - term: "Lime Location Permit"
+        states: ["AL"]
+      - term: "Facility License"  #AR
+        states: ["AR"]
+      - term: "Fertilizer Distributor Permit"
+        states: ["IL"]
+      - term: "Commercial Fertilizer Mixing Facility" #Specific to DE
+        states: ["DE"]
+      - term: "Lime Company License"  #GA
+        states: ["GA", "IA", "MO"]
+      - term: "Fertilizer Manufacturer/Dealers License"
+        states: ["IA"]
+      - term: "Distributor's License"
+        states: ["ND"]
+      - term: "Bulk Specialty Fertilizer License"  # Specific to KY
+        states: ["KY"]
+      - term: "Custom Mix Farm Fertilizers Only"  # Specific to KY
+        states: ["KY"]
+      - term: "Custom Mix Specialty Fertilizer" # Specific to KY
+        states: ["KY"]
+      - term: "Fertilizer Blender License"
+        states: ["KS"]
+      - term: "Lime Production Site License"
+        states: ["KS"]
+      - term: "Permit to Move Regulated Organisms"
+        states: ["FL"]
+      - term: "Commercial Fertilizer manufacturer's / Distributor's License"  #MI
+        states: ["MI"]
+  renewal:
+    canonical_name: "Renewal"
+    description: "The process of renewing a registration or license."
+    regex: "\\b(?i)(renewal|renew|annual renewal|biennial renewal)\\b" #Added Biennial renewal
+    state_terms: []
+
+  tonnage_reporting:
+    canonical_name: "Tonnage Reporting"
+    description: "Reporting of the quantity of regulated product sold or distributed."
+    regex: "\\b(?i)(tonnage report|tonnage reporting|inspection fee|mill fee|sales report|quarterly report|semi-annual report|monthly report|annual report|tonnage)\\b"
+    state_terms:
+      - term: "Tonnage Report"
+        states:  ["CT", "DE", "FL", "GA", "IA", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "MI", "MN", "MS", "MO", "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WV", "WY"]
+      - term: "Inspection Fee" #Many states collect fees based on tonnage
+        states: ["AL", "AR","AZ", "CA", "CO", "CT", "DE", "FL", "GA", "IA", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MS", "MO", "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WV", "WY"]
+      - term: "Mill Fee" #Added mill fee
+        states: ["AL", "AR", "AZ", "CA", "CO", "CT", "DE", "FL", "GA", "IA", "KS", "KY", "LA", "ME", "MN", "MS", "MT", "NC", "ND", "NE", "NJ", "NM", "NV", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WV", "WY"]
+      - term: "Sales Report" # Added sales report
+        states: ["AR"]
+      - term: "Quarterly Report" # General term
+        states:  ["AR", "AZ", "CA", "CO", "FL", "GA", "KS", "KY", "LA", "MD", "NM", "OK", "SC","WA", "WV"]
+      - term: "Semi-Annual Report"
+        states: ["CA", "DE", "GA", "IL", "IN", "KS", "MT", "NC", "ND", "NE", "NJ", "NY", "SC","WA", "WV"]
+      - term: "Monthly Report"
+        states:  ["AL", "AR", "DE", "GA", "IL", "MD", "MS"]
+      - term: "Annual Report"
+        states: ["AZ", "CT", "GA", "IA", "ME", "MN", "ND", "NE", "NH", "NY", "OH", "RI", "SD", "TN", "UT", "VT", "WA", "WV", "WY"]
+      - term: "Fertilizer Large Package Fees" #Specific to CO
+        states: ["CO"]
+      - term: "Fertilizer Small Package Fees" #Specific to CO
+        states: ["CO"]
+      - term: "Large & Small Package Inspection Fees" #Specific to CO
+        states: ["CO"]
+      - term: "Specialty Distribution fees" #CO, archived
+        states: ["CO"]
+      - term: "Quarterly Materials Mill Fees" #CA
+        states: ["CA"]
+      - term: "Lime Quarterly Tonnage Report" #AR
+        states: ["AR"]
+      - term: "Lime Reporting" #AL
+        states: ["AL"]
+      - term: "Lime Semi-Annual Tonnage" #DE
+        states: ["DE"]
+      - term: "Lime Annual Tonnage" #GA
+        states: ["GA"]
+      - term: "Monthly Fertilizer Tonnage Reports"
+        states: ["AR"]
+      - term: "SA Inspection fee and sales reports" #AR
+        states: ["AR"]
+      - term: "SA Semi-annual Reports" #GA
+        states: ["GA"]
+      - term: "Fertilizer Inspection fees" #GA
+        states: ["GA"]
+      - term: "Semi-Annual Com Fert Reports" #CA
+        states: ["CA"]
+      - term: "Tonnage Report (Amend)"
+        states: ["CT"]
+      - term: "Tonnage Report (Fert)"
+        states: ["CT"]
+      - term: "Tonnage Report (Lime)"
+        states: ["CT"]
+      - term: "Fertilizer-Pesticide Monthly Tonnage Report"
+        states: ["MD"]
+      - term: "Semi-Annual Fertilizer Tonnage Report"
+        states: ["MD"]
+      - term: "Semi-Annual Soil Conditioner Tonnage Report"
+        states: ["MD"]
+
+  amendment:
+    canonical_name: "Registration Amendment"
+    description: "Modification of an existing product registration."
+    regex: "\\b(?i)(amendment|label update|label revision|name change|guarantee change|registrant change|composition|labeling claims|directions for use)\\b" # Added formulation/composition
+    state_terms:
+      - term: "Label Update Submission" #AL, AZ, FL, GA, IA, KS, LA, ME, MO, NC, NE, OK, OR, PA, RI, SC, SD, TN, TX, UT, VA, VT, WA, WV, WY
+        states: []
+      - term: "Updated labels" #Commonly used term
+        states: []
+      - term: "Label Revision" # Common term
+        states: ["AL"]
+      - term: "Name Change"  # Specific change type
+        states: []
+      - term: "Guarantee Change" # Specific change type
+        states: []
+      - term: "Registrant Change" # Specific change type
+        states: []
+       - term: "composition"
+        states: ["CO"]
+      - term: "labeling claims"
+        states: ["CO"]
+      - term: "directions for use"
+        states: ["CO"]
+      - term: "Orignal Method of Discovery"
+        states: ["CA"]
+      - term: "Method"
+        states: ["CA"]
+
+  discontinuance:
+    canonical_name: "Product Discontinuance"
+    description: "Notification that a product will no longer be sold or distributed."
+    regex: "\\b(?i)(discontinuance|discontinue|cancellation|cancel product|product removal)\\b"
+    state_terms: [] # No state-specific terms *yet*, but we'll keep the structure.
+
+  no_regulation: #Explicitly not regulated.  Important for completeness.
+    canonical_name: "No Regulation"
+    description: "Explicitly not regulated."
+    regex: "\\b(?i)(no regulation|exempt from regulation|registration not required|labels need to be submitted with the license|soil amendments are considered commercial fertilizers|soil amendments are considered)\\b"
+    state_terms:
+        - term: "No Regulation" #When a product category is explicitly not regulated
+          states: ["AK", "AR","AZ", "CA", "CO", "CT", "DC", "HI", "IN", "NC", "NY", "SD"]
+        - term: "Registration not required. Label submission only" #Specific to AL
+          states: ["AL"]
+        - term: "Labels need to be submitted with the license" #AZ
+          states: ["AZ"]
+        - term: "soil amendments are considered \"commercial fertilizers\" if there is a yield claim" #AZ
+          states:["AZ"]

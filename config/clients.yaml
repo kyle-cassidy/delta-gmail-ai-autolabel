@@ -1,0 +1,193 @@
+clients:
+  AAS:
+    company_name: "Able Ag Solutions, LLC"
+    domains:
+      - "ableagsolutions.com"
+    primary_contact_email: "pieterbooysen@ableagsolutions.com"  # Added for direct lookup.
+    client_code: "AAS" #Keep for our reference.
+  AGR:
+    company_name: "Agrauxine Corp."
+    domains:
+      - "agrauxine.lesaffre.com"
+    primary_contact_email: "j.duncan@agrauxine.lesaffre.com"
+    client_code: "AGR"
+  AND:
+    company_name: "Andermatt US"
+    domains:
+      - "andermatt.usa.com"
+    primary_contact_email: "sarah.risorto@andermatt.usa.com"
+    client_code: "AND"
+  AQT:
+    company_name: "Aquatrols Corp of American"
+    domains:
+      - "aquatrols.com"  # CRITICAL: Added based on your previous structure.
+    primary_contact_email: ""  # No primary email in the data, keep consistent
+    client_code: "AQT"
+  ARB:
+    company_name: "Arborjet, Inc."
+    domains:
+      - "arborjet.com"
+    primary_contact_email: "nmillen@arborjet.com"
+    client_code: "ARB"
+  BIN:
+    company_name: "Bio Insumos Nativa SpA"
+    domains:
+      - "bionativa.cl"
+    primary_contact_email: "lorena.maldonado@bionativa.cl"
+    client_code: "BIN"
+  BOR:
+    company_name: "U.S. Borax Inc."
+    domains:
+      - "riotinto.com"
+    primary_contact_email: "roger.gunning@riotinto.com"
+    client_code: "BOR"
+  BPT:
+    company_name: "BioPro Technologies, LLC"
+    domains:
+      - "ecologel.com"
+    primary_contact_email: "sarah@ecologel.com"
+    client_code: "BPT"
+  COR:
+    company_name: "Corteva Agriscience LLC"
+    domains:
+      - "corteva.com"
+    primary_contact_email: "carol.saunders@corteva.com"
+    client_code: "COR"
+  DED:
+    company_name: "dedetec"
+    domains:
+      - "dedetec.de"
+    primary_contact_email: "uwe.dederichs@dedetec.de"
+    client_code: "DED"
+  ECO:
+    company_name: "Ecologel Solutions, LLC"
+    domains:
+      - "ecologel.com"
+    primary_contact_email: "sarah@ecologel.com"
+    client_code: "ECO"
+  EEA:
+    company_name: "Elemental Enzymes Ag and Turf, LLC"
+    domains:
+      - "elementalenzymes.com"
+    primary_contact_email: "keith@elementalenzymes.com"
+    client_code: "EEA"
+  GRN:
+    company_name: "Greenwise Turf and Ag Solutions"
+    domains:
+      - "greenwiseco.com"
+    primary_contact_email: "cagatay@greenwiseco.com"
+    client_code: "GRN"
+  GWB:
+    company_name: "Groundwork BioAg Ltd"
+    domains:
+      - "groundworkbioag.com" # Added per previous structure
+    primary_contact_email: ""   # No primary email provided, consistent.
+    client_code: "GWB"
+  IBA:
+    company_name: "Indogulf BioAg"
+    domains:
+      - "indogulfgroup.com"
+    primary_contact_email: "biosolutions@indogulfgroup.com"
+    client_code: "IBA"
+  KIT:
+    company_name: "KitoZyme"
+    domains:
+      - "kitozyme.com"
+    primary_contact_email: "g.deleixhe@kitozyme.com"
+    client_code: "KIT"
+  KOC:
+    company_name: "Kocide / Speiss-Urania"
+    domains:
+      - "spiess-urania.com"
+    primary_contact_email: "jens.niklaus@spiess-urania.com"
+    client_code: "KOC"
+  LAM:
+    company_name: "Lamberti, Inc"
+    domains: [] # You provided no domain for LAM
+    primary_contact_email: ""
+    client_code: "LAM"
+  LOC:
+    company_name: "Locus Agriculture Solutions"
+    domains: []  # No domain provided
+    primary_contact_email: ""
+    client_code: "LOC"
+  MAN:
+    company_name: "Manvert USA LLC"
+    domains:
+      - "manvert.com"
+    primary_contact_email: "eli.pifarre@manvert.com"
+    client_code: "MAN"
+  OMC:
+    company_name: "Omya Canada"
+    domains: [] #No Domain provided
+    primary_contact_email: ""
+    client_code: "OMC"
+  OMY:
+    company_name: "Omya Inc."
+    domains:
+      - "omya.com"
+    primary_contact_email: ""  # No primary contact, keep consistent.
+    client_code: "OMY"
+  PET:
+    company_name: "Petglow"
+    domains:
+      - "celcius.us"
+    primary_contact_email: "rakesh@celcius.us"
+    client_code: "PET"
+  PLL:
+    company_name: "Precision Laboratories Ltd"
+    domains: []  # No domain provided
+    primary_contact_email: ""
+    client_code: "PLL"
+  PRO:
+    company_name: "Probelte S.A.U."
+    domains:
+      - "probelte.com"
+    primary_contact_email: "andresantos@probelte.com"
+    client_code: "PRO"
+  PVT:
+    company_name: "Pivot Bio, Inc."
+    domains:
+      - "pivotbio.com"
+    primary_contact_email: "shade@pivotbio.com"
+    client_code: "PVT"
+  ROY:
+    company_name: "Royal Brinkman Canada"
+    domains:
+      - "royalbrinkman.ca"
+    primary_contact_email: "julie.fordyce@royalbrinkman.ca"
+    client_code: "ROY"
+  SAG:
+    company_name: "Solstice Agriculture, LLC"
+    domains:
+      - "solsticeag.com"
+    primary_contact_email: "patrick@solsticeag.com"
+    client_code: "SAG"
+  SEI:
+    company_name: "SEIPASA, S.A."
+    domains:
+      - "seipasa.com"
+    primary_contact_email: "j.asensi@seipasa.com"
+    client_code: "SEI"
+  SYM:
+    company_name: "Symborg Inc"
+    domains:
+      - "symborg.com"
+    primary_contact_email: ""
+    client_code: "SYM"
+  TBP: #Added Company Code per earlier in conversation.
+    company_name: "ThinkBio PTY"
+    domains: []  # You provided no domain
+    primary_contact_email: ""
+    client_code: "TBP"
+  VLS: #Added Company Code per earlier in conversation.
+    company_name: "Verdesian Life Sciences US LLC"
+    domains: [] # You provided no domain
+    primary_contact_email: ""
+    client_code: "VLS"
+  ZZZ:
+    company_name: "Company Automation Tester"
+    domains:
+      - "delta-ac.com"
+    primary_contact_email: "tjtubia@delta-ac.com"
+    client_code: "ZZZ"
