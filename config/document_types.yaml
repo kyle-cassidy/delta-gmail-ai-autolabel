@@ -1,0 +1,98 @@
+# document_types.yaml
+version: "1.0.0"
+last_updated: "2024-03-14"
+description: "Defines base document types and their validation rules"
+
+# Base Document Types
+# These are the fundamental types of regulatory documents that apply across product categories
+
+base_types:
+  NEW:
+    description: "New product registration application"
+    patterns:
+      - regex: "(?i)\\b(new|initial)\\s+(?:product\\s+)?registration\\b"
+        confidence: 0.9
+      - regex: "(?i)\\bfirst\\s+time\\s+registration\\b"
+        confidence: 0.8
+    required_fields:
+      - company_name
+      - product_name
+      - state
+    metadata_fields:
+      - registration_fee
+      - product_category
+      
+  RENEW:
+    description: "Renewal application for existing registration"
+    patterns:
+      - regex: "(?i)\\b(?:registration\\s+)?renewal\\b"
+        confidence: 0.9
+      - regex: "(?i)\\brenew(?:al)?\\s+(?:of\\s+)?registration\\b"
+        confidence: 0.9
+    required_fields:
+      - company_name
+      - product_name
+      - state
+      - previous_registration_number
+    metadata_fields:
+      - renewal_fee
+      - renewal_period
+      
+  TONNAGE:
+    description: "Tonnage reporting for distributed products"
+    patterns:
+      - regex: "(?i)\\btonnage\\s+report\\b"
+        confidence: 0.95
+      - regex: "(?i)\\b(?:quarterly|annual)\\s+tonnage\\b"
+        confidence: 0.9
+    required_fields:
+      - company_name
+      - reporting_period
+      - state
+    metadata_fields:
+      - total_tons
+      - inspection_fee
+      
+  CERT:
+    description: "Registration certificate or approval"
+    patterns:
+      - regex: "(?i)\\b(?:registration\\s+)?certificate\\b"
+        confidence: 0.95
+      - regex: "(?i)\\bcertificate\\s+of\\s+registration\\b"
+        confidence: 0.95
+      - regex: "(?i)\\bregistration\\s+approval\\b"
+        confidence: 0.9
+    required_fields:
+      - company_name
+      - product_name
+      - registration_number
+      - state
+    metadata_fields:
+      - effective_date
+      - expiration_date
+      
+  LABEL:
+    description: "Product label or label amendment"
+    patterns:
+      - regex: "(?i)\\bproduct\\s+label\\b"
+        confidence: 0.95
+      - regex: "(?i)\\blabel\\s+amendment\\b"
+        confidence: 0.9
+      - regex: "(?i)\\brevised\\s+label\\b"
+        confidence: 0.85
+    required_fields:
+      - company_name
+      - product_name
+      - state
+    metadata_fields:
+      - label_version
+      - revision_date
+
+# Validation rules
+validation:
+  base_type_pattern: "^(NEW|RENEW|TONNAGE|CERT|LABEL)$"
+  required_fields:
+    - description
+    - patterns
+    - required_fields
+    - metadata_fields 

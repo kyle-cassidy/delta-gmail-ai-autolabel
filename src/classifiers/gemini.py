@@ -2,14 +2,16 @@
 Gemini Flash Document Classifier Implementation
 """
 import os
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Tuple
 import google.generativeai as genai
 from pathlib import Path
 import json
 import asyncio
+import io
+import base64
+import mimetypes
 from .base import BaseDocumentClassifier, ClassificationResult
 from .domain_config import DomainConfig
-import PyPDF2
 
 class GeminiClassifier(BaseDocumentClassifier):
     """Document classifier using Google's Gemini Flash model."""
@@ -34,93 +36,70 @@ class GeminiClassifier(BaseDocumentClassifier):
         # Load domain configuration
         self.domain_config = DomainConfig(config_dir)
         
-    async def classify_document(self, file_path: Union[str, Path]) -> ClassificationResult:
+    async def classify_document(self, 
+                              source: Union[str, Path, bytes],
+                              source_type: str = "file",
+                              metadata: Optional[Dict] = None) -> ClassificationResult:
         """Classify a single document using Gemini Flash."""
         try:
-            # Load and validate the document
-            file_path = Path(file_path)
-            if not file_path.exists():
-                raise FileNotFoundError(f"File not found: {file_path}")
-            
-            # Check file size (20MB limit)
-            file_size = file_path.stat().st_size
-            if file_size > 20 * 1024 * 1024:  # 20MB in bytes
-                raise ValueError("File size exceeds 20MB limit")
-            
-            # Check page count for PDFs
-            if file_path.suffix.lower() == '.pdf':
+            # Process the document based on source type
+            if source_type == "file":
+                file_path = Path(source)
+                if not file_path.exists():
+                    raise FileNotFoundError(f"File not found: {file_path}")
+                    
+                # Check file size (20MB limit)
+                file_size = file_path.stat().st_size
+                if file_size > 20 * 1024 * 1024:  # 20MB in bytes
+                    raise ValueError("File size exceeds 20MB limit")
+                
+                mime_type, _ = mimetypes.guess_type(str(file_path))
                 with open(file_path, 'rb') as f:
-                    pdf = PyPDF2.PdfReader(f)
-                    if len(pdf.pages) > 3600:
-                        raise ValueError("Document exceeds 3600 page limit")
-            
-            # Read file content and convert to base64
-            import base64
-            import mimetypes
-            
-            mime_type, _ = mimetypes.guess_type(str(file_path))
-            if not mime_type:
-                mime_type = 'application/octet-stream'
-            
-            with open(file_path, 'rb') as f:
-                file_content = f.read()
-                file_data = base64.b64encode(file_content).decode('utf-8')
-            
-            # Prepare the prompt for Gemini
-            prompt = """
-            Please analyze this document and extract the following information in JSON format:
-            {
-                "document_type": "The type of regulatory document (e.g., registration, renewal, tonnage report)",
-                "entities": {
-                    "companies": ["List of company names mentioned"],
-                    "products": ["List of product names/types mentioned"],
-                    "states": ["List of US states mentioned"]
-                },
-                "key_fields": {
-                    "dates": ["Any important dates mentioned"],
-                    "registration_numbers": ["Any registration or license numbers"],
-                    "amounts": ["Any monetary amounts or quantities"]
-                },
-                "tables": ["Array of any tables found, each as a list of rows"],
-                "summary": "A brief summary of the document's purpose and content"
-            }
-            
-            Please be precise and only include information that is explicitly present in the document.
-            If any field has no relevant information, return an empty array or null.
-            """
-            
-            # Process with Gemini
-            response = self.model.generate_content([{
-                'parts': [
-                    {'text': prompt},
-                    {'inline_data': {
-                        'mime_type': mime_type,
-                        'data': file_data
-                    }}
-                ]
-            }])
-            
-            # Parse and validate the response
-            try:
-                raw_result = json.loads(response.text)
+                    file_content = f.read()
+                    
+            elif source_type == "bytes":
+                file_content = source
+                mime_type = "application/octet-stream"
+                
+            elif source_type == "text":
+                # For text content, we'll use a different Gemini model
+                text_model = genai.GenerativeModel('gemini-pro')
+                raw_result = await self._process_text_content(source, text_model)
+                if metadata:
+                    raw_result = self._enhance_with_metadata(raw_result, metadata)
                 return self._convert_to_classification_result(raw_result)
-            except json.JSONDecodeError:
-                return self._create_error_result("Failed to parse Gemini response as JSON")
+                
+            else:
+                raise ValueError(f"Unsupported source type: {source_type}")
             
-        except FileNotFoundError as e:
-            raise  # Re-raise FileNotFoundError directly
-        except ValueError as e:
-            raise  # Re-raise ValueError directly
+            # For file and bytes, process with Gemini Vision
+            raw_result = await self._process_binary_content(file_content, mime_type)
+            
+            # Enhance with metadata if provided
+            if metadata:
+                raw_result = self._enhance_with_metadata(raw_result, metadata)
+                
+            return self._convert_to_classification_result(raw_result)
+            
         except Exception as e:
             return self._create_error_result(str(e))
             
-    async def classify_batch(self, file_paths: List[Union[str, Path]], 
+    async def classify_batch(self, 
+                           sources: List[Union[str, Path, bytes]],
+                           source_type: str = "file",
+                           metadata: Optional[List[Dict]] = None,
                            max_concurrent: int = 5) -> List[ClassificationResult]:
         """Classify multiple documents concurrently."""
         results = []
-        for i in range(0, len(file_paths), max_concurrent):
-            batch = file_paths[i:i + max_concurrent]
-            tasks = [self.classify_document(path) for path in batch]
+        metadata_list = metadata or [None] * len(sources)
+        
+        for i in range(0, len(sources), max_concurrent):
+            batch_sources = sources[i:i + max_concurrent]
+            batch_metadata = metadata_list[i:i + max_concurrent]
+            tasks = [
+                self.classify_document(source, source_type, md) 
+                for source, md in zip(batch_sources, batch_metadata)
+            ]
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
             
             # Handle any exceptions in the batch
@@ -131,7 +110,106 @@ class GeminiClassifier(BaseDocumentClassifier):
                     results.append(result)
                     
         return results
-    
+        
+    async def _process_binary_content(self, content: bytes, mime_type: str) -> Dict:
+        """Process binary content with Gemini Vision."""
+        file_data = base64.b64encode(content).decode('utf-8')
+        
+        # Prepare the prompt for Gemini
+        prompt = """
+        Please analyze this document and extract the following information in JSON format:
+        {
+            "document_type": "The type of regulatory document (e.g., registration, renewal, tonnage report)",
+            "entities": {
+                "companies": ["List of company names mentioned"],
+                "products": ["List of product names/types mentioned"],
+                "states": ["List of US states mentioned"]
+            },
+            "key_fields": {
+                "dates": ["Any important dates mentioned"],
+                "registration_numbers": ["Any registration or license numbers"],
+                "amounts": ["Any monetary amounts or quantities"]
+            },
+            "tables": ["Array of any tables found, each as a list of rows"],
+            "summary": "A brief summary of the document's purpose and content",
+            "text": "The full extracted text content from the document"
+        }
+        
+        Please be precise and only include information that is explicitly present in the document.
+        If any field has no relevant information, return an empty array or null.
+        """
+        
+        # Process with Gemini
+        response = await self.model.generate_content([{
+            'parts': [
+                {'text': prompt},
+                {'inline_data': {
+                    'mime_type': mime_type,
+                    'data': file_data
+                }}
+            ]
+        }])
+        
+        # Parse and validate the response
+        try:
+            return json.loads(response.text)
+        except json.JSONDecodeError:
+            raise ValueError("Failed to parse Gemini response as JSON")
+            
+    async def _process_text_content(self, content: str, model) -> Dict:
+        """Process text content with Gemini Pro."""
+        prompt = f"""
+        Please analyze this text and extract the following information in JSON format:
+        {{
+            "document_type": "The type of regulatory document (e.g., registration, renewal, tonnage report)",
+            "entities": {{
+                "companies": ["List of company names mentioned"],
+                "products": ["List of product names/types mentioned"],
+                "states": ["List of US states mentioned"]
+            }},
+            "key_fields": {{
+                "dates": ["Any important dates mentioned"],
+                "registration_numbers": ["Any registration or license numbers"],
+                "amounts": ["Any monetary amounts or quantities"]
+            }},
+            "summary": "A brief summary of the text's purpose and content",
+            "text": {json.dumps(content)}
+        }}
+        
+        Please be precise and only include information that is explicitly present in the text.
+        If any field has no relevant information, return an empty array or null.
+        """
+        
+        response = await model.generate_content(prompt)
+        
+        try:
+            return json.loads(response.text)
+        except json.JSONDecodeError:
+            raise ValueError("Failed to parse Gemini response as JSON")
+            
+    def _enhance_with_metadata(self, raw_result: Dict, metadata: Dict) -> Dict:
+        """Enhance classification results with provided metadata."""
+        # Add metadata to existing result
+        if "metadata" not in raw_result:
+            raw_result["metadata"] = {}
+        raw_result["metadata"]["source_metadata"] = metadata
+        
+        # If we have email metadata, use it to improve classification
+        if "email_subject" in metadata:
+            # Try to extract additional entities from subject
+            subject_entities = self._extract_entities_from_text(metadata["email_subject"])
+            raw_result["entities"]["companies"].extend(subject_entities.get("companies", []))
+            raw_result["entities"]["states"].extend(subject_entities.get("states", []))
+            
+        return raw_result
+        
+    def _extract_entities_from_text(self, text: str) -> Dict[str, List[str]]:
+        """Extract entities from a text string."""
+        return {
+            "companies": [match[1] for match in self.domain_config.get_company_codes(text)],
+            "states": self.domain_config.get_states(text)
+        }
+        
     def get_classifier_info(self) -> Dict[str, str]:
         """Get information about this classifier implementation."""
         return {
@@ -145,15 +223,31 @@ class GeminiClassifier(BaseDocumentClassifier):
     def _convert_to_classification_result(self, raw_result: Dict) -> ClassificationResult:
         """Convert raw Gemini output to standardized ClassificationResult."""
         # Get document text for domain validation
-        doc_text = raw_result.get('text', '')  # Gemini should include the extracted text
+        doc_text = raw_result.get('text', '')
         
         # Use domain config to validate and enhance the classification
-        doc_type = self.domain_config.get_document_type(doc_text) or raw_result.get('document_type')
+        doc_type, base_type = self.domain_config.get_document_type(doc_text)
+        if not doc_type:
+            doc_type = raw_result.get('document_type')
         
         # Get domain-validated states
         states = self.domain_config.get_states(doc_text)
+        
+        # Get company codes and names
+        company_matches = self.domain_config.get_company_codes(doc_text)
+        companies = raw_result.get('entities', {}).get('companies', [])
+        company_codes = []
+        if company_matches:
+            # Add any missing companies from raw results
+            companies.extend(match[1] for match in company_matches 
+                           if match[1] not in companies)
+            # Get the codes
+            company_codes = [match[0] for match in company_matches]
+        
+        # Build entities dict
         entities = raw_result.get('entities', {'companies': [], 'products': [], 'states': []})
-        entities['states'] = states  # Override with validated states
+        entities['companies'] = companies
+        entities['states'] = states
         
         # Validate registration numbers
         key_fields = raw_result.get('key_fields', {'dates': [], 'registration_numbers': [], 'amounts': []})
@@ -181,7 +275,9 @@ class GeminiClassifier(BaseDocumentClassifier):
             'classifier': self.get_classifier_info()['name'],
             'domain_confidence': domain_confidence,
             'product_categories': self.domain_config.get_product_categories(doc_text),
-            'related_document_types': self.domain_config.get_related_documents(doc_type) if doc_type else []
+            'related_document_types': self.domain_config.get_related_documents(doc_type) if doc_type else [],
+            'base_type': base_type,  # Add the standardized base type
+            'company_codes': company_codes  # Add the standardized company codes
         }
         
         return ClassificationResult(

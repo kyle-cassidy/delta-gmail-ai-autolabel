@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Union
 from pathlib import Path
 import asyncio
 import json
+import io
 from docling import DocProcessor, TableFormer  # Note: Package name may differ
 from .base import BaseDocumentClassifier, ClassificationResult
 from .domain_config import DomainConfig
@@ -30,33 +31,59 @@ class DoclingClassifier(BaseDocumentClassifier):
         # Load domain configuration
         self.domain_config = DomainConfig(config_dir)
         
-    async def classify_document(self, file_path: Union[str, Path]) -> ClassificationResult:
+    async def classify_document(self, 
+                              source: Union[str, Path, bytes],
+                              source_type: str = "file",
+                              metadata: Optional[Dict] = None) -> ClassificationResult:
         """Classify a single document using Docling."""
         try:
-            # Load and validate the document
-            file_path = Path(file_path)
-            if not file_path.exists():
-                raise FileNotFoundError(f"File not found: {file_path}")
+            # Process the document based on source type
+            if source_type == "file":
+                file_path = Path(source)
+                if not file_path.exists():
+                    raise FileNotFoundError(f"File not found: {file_path}")
+                doc_result = await asyncio.get_event_loop().run_in_executor(
+                    None, self._process_document, file_path
+                )
+            elif source_type == "bytes":
+                # Process bytes directly
+                doc_result = await asyncio.get_event_loop().run_in_executor(
+                    None, self._process_bytes, source
+                )
+            elif source_type == "text":
+                # Process text content directly
+                doc_result = await asyncio.get_event_loop().run_in_executor(
+                    None, self._process_text, source
+                )
+            else:
+                raise ValueError(f"Unsupported source type: {source_type}")
             
-            # Process the document with Docling
-            # Note: We're running CPU-intensive operations in a thread pool
-            doc_result = await asyncio.get_event_loop().run_in_executor(
-                None, self._process_document, file_path
-            )
+            # Enhance classification with metadata if provided
+            if metadata:
+                doc_result = self._enhance_with_metadata(doc_result, metadata)
             
             # Convert Docling output to our standard format
             return self._convert_to_classification_result(doc_result)
             
         except Exception as e:
             raise Exception(f"Docling classification failed: {str(e)}")
-    
-    async def classify_batch(self, file_paths: List[Union[str, Path]], 
+            
+    async def classify_batch(self, 
+                           sources: List[Union[str, Path, bytes]],
+                           source_type: str = "file",
+                           metadata: Optional[List[Dict]] = None,
                            max_concurrent: int = 5) -> List[ClassificationResult]:
         """Classify multiple documents concurrently."""
         results = []
-        for i in range(0, len(file_paths), max_concurrent):
-            batch = file_paths[i:i + max_concurrent]
-            tasks = [self.classify_document(path) for path in batch]
+        metadata_list = metadata or [None] * len(sources)
+        
+        for i in range(0, len(sources), max_concurrent):
+            batch_sources = sources[i:i + max_concurrent]
+            batch_metadata = metadata_list[i:i + max_concurrent]
+            tasks = [
+                self.classify_document(source, source_type, md) 
+                for source, md in zip(batch_sources, batch_metadata)
+            ]
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
             
             # Handle any exceptions in the batch
@@ -67,6 +94,82 @@ class DoclingClassifier(BaseDocumentClassifier):
                     results.append(result)
                     
         return results
+
+    def _process_bytes(self, content: bytes) -> Dict:
+        """Process document from bytes."""
+        # Create a file-like object from bytes
+        file_obj = io.BytesIO(content)
+        doc = self.processor.process_file_object(file_obj)
+        return self._extract_document_info(doc)
+        
+    def _process_text(self, content: str) -> Dict:
+        """Process document from text content."""
+        doc = self.processor.process_text(content)
+        return self._extract_document_info(doc)
+        
+    def _process_document(self, file_path: Path) -> Dict:
+        """Process document from file path."""
+        doc = self.processor.process_document(file_path)
+        return self._extract_document_info(doc)
+        
+    def _extract_document_info(self, doc) -> Dict:
+        """Extract common document information."""
+        # Get document text for pattern matching
+        doc_text = doc.get_text()
+        
+        # Extract tables if present
+        tables = []
+        if doc.has_tables:
+            tables = self.table_extractor.extract_tables(doc)
+        
+        # Use domain configuration to extract entities and information
+        entities = self._extract_entities(doc, doc_text)
+        key_fields = self._extract_key_fields(doc)
+        
+        # Determine document type using domain patterns
+        doc_type, base_type = self.domain_config.get_document_type(doc_text)
+        
+        # Get related document types
+        related_types = self.domain_config.get_related_documents(doc_type) if doc_type else []
+        
+        return {
+            "document_type": doc_type,
+            "base_type": base_type,
+            "entities": entities,
+            "key_fields": key_fields,
+            "tables": tables,
+            "summary": doc.get_summary(),
+            "metadata": {
+                "page_count": doc.page_count,
+                "has_tables": bool(tables),
+                "confidence": doc.extraction_confidence,
+                "related_document_types": related_types,
+                "product_categories": self.domain_config.get_product_categories(doc_text)
+            }
+        }
+        
+    def _enhance_with_metadata(self, doc_result: Dict, metadata: Dict) -> Dict:
+        """Enhance classification results with provided metadata."""
+        # Add metadata to existing result
+        doc_result["metadata"].update({
+            "source_metadata": metadata
+        })
+        
+        # If we have email metadata, use it to improve classification
+        if "email_subject" in metadata:
+            # Try to extract additional entities from subject
+            subject_entities = self._extract_entities_from_text(metadata["email_subject"])
+            doc_result["entities"]["companies"].extend(subject_entities.get("companies", []))
+            doc_result["entities"]["states"].extend(subject_entities.get("states", []))
+            
+        return doc_result
+        
+    def _extract_entities_from_text(self, text: str) -> Dict[str, List[str]]:
+        """Extract entities from a text string."""
+        return {
+            "companies": [match[1] for match in self.domain_config.get_company_codes(text)],
+            "states": self.domain_config.get_states(text)
+        }
     
     def get_classifier_info(self) -> Dict[str, str]:
         """Get information about this classifier implementation."""
@@ -82,52 +185,6 @@ class DoclingClassifier(BaseDocumentClassifier):
                 "No API costs or rate limits",
                 "Domain-aware classification using regulatory configurations"
             ]
-        }
-    
-    def _process_document(self, file_path: Path) -> Dict:
-        """
-        Process a document using Docling.
-        
-        Args:
-            file_path: Path to the document
-            
-        Returns:
-            Dictionary containing extracted information
-        """
-        # Process the document
-        doc = self.processor.process_document(file_path)
-        
-        # Get document text for pattern matching
-        doc_text = doc.get_text()
-        
-        # Extract tables if present
-        tables = []
-        if doc.has_tables:
-            tables = self.table_extractor.extract_tables(doc)
-        
-        # Use domain configuration to extract entities and information
-        entities = self._extract_entities(doc, doc_text)
-        key_fields = self._extract_key_fields(doc)
-        
-        # Determine document type using domain patterns
-        doc_type = self.domain_config.get_document_type(doc_text)
-        
-        # Get related document types
-        related_types = self.domain_config.get_related_documents(doc_type) if doc_type else []
-        
-        return {
-            "document_type": doc_type,
-            "entities": entities,
-            "key_fields": key_fields,
-            "tables": tables,
-            "summary": doc.get_summary(),
-            "metadata": {
-                "page_count": doc.page_count,
-                "has_tables": bool(tables),
-                "confidence": doc.extraction_confidence,
-                "related_document_types": related_types,
-                "product_categories": self.domain_config.get_product_categories(doc_text)
-            }
         }
     
     def _extract_entities(self, doc, doc_text: str) -> Dict[str, List[str]]:

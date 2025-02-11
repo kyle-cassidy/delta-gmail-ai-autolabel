@@ -1,15 +1,29 @@
+version: "1.0.0"
+last_updated: "2024-03-14"
+description: "Defines product categories, subcategories, and state-specific terminology"
+
 product_categories:
   fertilizer:
     canonical_name: "Fertilizer"
     description: "Products containing one or more recognized plant nutrients used for promoting plant growth."
     regex: "\\b(?i)(fertilizer|fert|plant food|plant nutrient)\\b"
+    base_types:
+      - NEW
+      - RENEW
+      - TONNAGE
+      - CERT
+      - LABEL
     subcategories:
       commercial:
         canonical_name: "Commercial Fertilizer"
         description: "Fertilizers generally for agricultural use, often in bulk or larger quantities."
         regex: "\\b(?i)(commercial fertilizer|agricultural? fertilizer|farm fertilizer|fertilizer(?!\\s*(dealer|manufacturer|manufacturers|mixing|blender|license|permit|products|inspection|tonnage)))\\b"
-        # The negative lookahead prevents matching phrases like "fertilizer dealer permit"
-        # Added "agricultural" and "farm"
+        base_types:
+          - NEW
+          - RENEW
+          - TONNAGE
+          - CERT
+          - LABEL
         state_terms:
           - term: "Commercial Fertilizer"
             states: ["AL", "AR", "AZ", "CO", "CT", "DE", "FL", "GA", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MS", "MO", "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WV", "WY"]
@@ -25,7 +39,12 @@ product_categories:
       specialty:
         canonical_name: "Specialty Fertilizer"
         description: "Fertilizers typically for non-commercial use, such as home gardens, lawns, and houseplants."
-        regex: "\\b(?i)(specialty fertilizer|non-ag fertilizer|non-agricultural fertilizer|home (and|&) garden|small package)\\b" #Added more terms
+        regex: "\\b(?i)(specialty fertilizer|non-ag fertilizer|non-agricultural fertilizer|home (and|&) garden|small package)\\b"
+        base_types:
+          - NEW
+          - RENEW
+          - CERT
+          - LABEL
         state_terms:
           - term: "Specialty Fertilizer"
             states: ["AR", "AZ", "CA", "CO", "CT", "FL", "GA", "IA", "KS", "KY", "MA", "MD", "ME", "MI", "MN", "MS", "MO", "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WV", "WY"]
@@ -68,7 +87,12 @@ product_categories:
   biostimulant:
     canonical_name: "Biostimulant"
     description: "Substances or microorganisms that enhance plant growth, nutrient uptake, or stress tolerance, but are not primarily fertilizers."
-    regex: "\\b(?i)(biostimulant|plant growth regulator|plant amendment|soil amendment|soil conditioner|plant inoculant|auxiliary soil and plant substance|beneficial substance)\\b" # Broad regex, includes related terms.
+    regex: "\\b(?i)(biostimulant|plant growth regulator|plant amendment|soil amendment|soil conditioner|plant inoculant|auxiliary soil and plant substance|beneficial substance)\\b"
+    base_types:
+      - NEW
+      - RENEW
+      - CERT
+      - LABEL
     subcategories:
       biological_inoculant:
         canonical_name: "Biological Inoculant"

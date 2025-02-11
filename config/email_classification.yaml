@@ -1,0 +1,133 @@
+# Email Classification Configuration
+version: "1.0.0"
+last_updated: "2024-03-14"
+description: "Email classification rules integrating document types, regulatory actions, and client information"
+
+# This configuration brings together all aspects of email classification:
+# 1. Document type detection (from document_types.yaml)
+# 2. Regulatory action identification (from regulatory_actions.yaml)
+# 3. Company recognition (from company_codes.yaml)
+# 4. State detection (from state_patterns.yaml)
+# 5. Product categorization (from product_categories.yaml)
+
+email_classification:
+  # Required tags for all classified emails
+  required_tags:
+    - YEAR          # Year of the document/action
+    - TERM          # Q1-Q4 or specific month
+    - STATE         # State code from state_patterns.yaml
+    - CLIENT        # Company code from company_codes.yaml
+    - BASE_TYPE     # Base document type from document_types.yaml
+    - STATUS        # Current status in workflow
+
+  # Optional tags that provide additional context
+  optional_tags:
+    - PRODUCT_TYPE  # From product_categories.yaml
+    - ACTION_TYPE   # Specific regulatory action
+    - DUE_DATE     # If action required by specific date
+    - PRIORITY     # High/Medium/Low based on rules
+
+  # Company recognition rules
+  company_recognition:
+    match_rules:
+      - type: "domain"
+        description: "Match based on email domain"
+        priority: 1
+        source: "company_codes.yaml:domains"
+      - type: "name"
+        description: "Match based on company name"
+        priority: 2
+        source: "company_codes.yaml:name"
+      - type: "alias"
+        description: "Match based on company aliases"
+        priority: 3
+        source: "company_codes.yaml:aliases"
+    validation:
+      require_exact_match: true
+      fallback_to_fuzzy: false
+      min_confidence: 0.9
+
+  # Rules for automatic status assignment
+  status_rules:
+    ACTION_REQUIRED:
+      patterns:
+        - regex: "(?i)\\b(due|submit|required|deadline)\\b"
+          confidence: 0.9
+        - regex: "(?i)\\bby\\s+\\w+\\s+\\d{1,2}(?:st|nd|rd|th)?\\b"
+          confidence: 0.9
+      conditions:
+        - "has_due_date"
+        - "matches_action_pattern"
+
+    INFO_ONLY:
+      patterns:
+        - regex: "(?i)\\b(confirm|receipt|approved|completed)\\b"
+          confidence: 0.9
+        - regex: "(?i)\\bfor\\s+your\\s+(?:records|information)\\b"
+          confidence: 0.9
+      conditions:
+        - "no_action_required"
+        - "matches_info_pattern"
+
+    REFERENCE:
+      patterns:
+        - regex: "(?i)\\b(keep|retain|reference|official)\\b"
+          confidence: 0.9
+      conditions:
+        - "is_certificate"
+        - "is_approval"
+
+  # Priority assignment rules
+  priority_rules:
+    HIGH:
+      conditions:
+        - "has_due_date_within_7_days"
+        - "is_renewal_period"
+        - "is_required_filing"
+        - "matches_state_deadline"  # Check against state-specific deadlines
+    MEDIUM:
+      conditions:
+        - "has_due_date_within_30_days"
+        - "is_optional_filing"
+    LOW:
+      conditions:
+        - "is_info_only"
+        - "is_reference"
+
+  # State-specific rules
+  state_rules:
+    use_state_overrides: true
+    source: "state_specific.yaml"
+    apply_to:
+      - "renewal_dates"
+      - "tonnage_frequency"
+      - "required_fields"
+
+  # Integration with other configurations
+  relationships:
+    document_types: "1.0.0"
+    regulatory_actions: "1.0.0"
+    company_codes: "1.0.0"  # Now includes all client information
+    state_patterns: "1.0.0"
+    product_categories: "1.0.0"
+    state_specific: "1.0.0"
+
+# Validation rules
+validation:
+  required_fields:
+    - required_tags
+    - status_rules
+    - priority_rules
+  tag_formats:
+    YEAR: "^\\d{4}$"
+    TERM: "^(Q[1-4]|[A-Z][a-z]{2})$"
+    STATE: "^[A-Z]{2}$"
+    CLIENT: "^[A-Z]{3}$"
+    BASE_TYPE: "^(NEW|RENEW|TONNAGE|CERT|LABEL)$"
+    STATUS: "^(ACTION_REQUIRED|INFO_ONLY|REFERENCE)$"
+
+  # Company validation
+  company_validation:
+    require_domain_match: true
+    require_contact_info: true
+    check_state_registrations: true 

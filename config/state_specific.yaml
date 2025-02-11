@@ -1,6 +1,61 @@
 # state_specific.yaml
 # Contains state-specific overrides and additions to the general ontology rules.
 
+# State-Specific Overrides
+version: "1.0.0"
+last_updated: "2024-03-14"
+description: "State-specific overrides and exceptions for regulatory rules and patterns"
+
+# This file contains state-specific overrides that don't fit the standard patterns
+# Use this for:
+# 1. Unique state requirements that deviate from standard patterns
+# 2. State-specific validation rules that override defaults
+# 3. Special case handling for specific states
+
+state_overrides:
+  CA:
+    # California often has unique requirements
+    product_registration:
+      required_fields:
+        - "heavy metals analysis"  # CA specific requirement
+        - "ingredient statement"   # Different format in CA
+    validation_rules:
+      registration_number:
+        pattern: "^CA-\\d{4}-\\d{2}$"
+        exceptions:
+          - pattern: "^OIM-\\d{4}-\\d{2}$"  # Special format for organic materials
+          - pattern: "^ST-\\d{4}-\\d{2}$"   # Special format for seed treatments
+    document_markers:
+      additional_headers:
+        - "(?i)CDFA\\s+Application"
+        - "(?i)California\\s+Registration"
+
+  FL:
+    # Florida has specific tonnage reporting requirements
+    tonnage_reporting:
+      frequency: "monthly"  # Override standard quarterly
+      required_fields:
+        - "county_distribution"  # FL specific requirement
+    validation_rules:
+      registration_number:
+        pattern: "^F-\\d{6}$"
+        allow_legacy: true  # FL still accepts old format numbers
+
+  # Add more state-specific overrides as needed
+
+# Validation rules for this config
+validation:
+  required_fields:
+    - state_code
+    - override_type
+    - override_rules
+  allowed_override_types:
+    - product_registration
+    - tonnage_reporting
+    - licensing
+    - validation_rules
+    - document_markers
+
 state_specific:
   CA:
     requires_efficacy: true

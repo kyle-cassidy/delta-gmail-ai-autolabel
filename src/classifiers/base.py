@@ -5,7 +5,7 @@ This module defines the base interface that all document classifiers must implem
 Supports hot-swapping of different classification implementations.
 """
 from abc import ABC, abstractmethod
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 from pathlib import Path
 from pydantic import BaseModel
 
@@ -23,12 +23,20 @@ class BaseDocumentClassifier(ABC):
     """Abstract base class for document classifiers."""
     
     @abstractmethod
-    async def classify_document(self, file_path: Union[str, Path]) -> ClassificationResult:
+    async def classify_document(self, 
+                              source: Union[str, Path, bytes], 
+                              source_type: str = "file",
+                              metadata: Optional[Dict] = None) -> ClassificationResult:
         """
-        Classify a single document.
+        Classify a single document from various sources.
         
         Args:
-            file_path: Path to the document file
+            source: The document source, which can be:
+                   - A file path (str or Path) when source_type is "file"
+                   - Raw document bytes when source_type is "bytes"
+                   - Document text content when source_type is "text"
+            source_type: Type of the source ("file", "bytes", or "text")
+            metadata: Optional metadata about the source (e.g., email subject, sender)
             
         Returns:
             ClassificationResult containing the classification details
@@ -36,13 +44,18 @@ class BaseDocumentClassifier(ABC):
         pass
     
     @abstractmethod
-    async def classify_batch(self, file_paths: List[Union[str, Path]], 
+    async def classify_batch(self, 
+                           sources: List[Union[str, Path, bytes]],
+                           source_type: str = "file",
+                           metadata: Optional[List[Dict]] = None,
                            max_concurrent: int = 5) -> List[ClassificationResult]:
         """
-        Classify multiple documents.
+        Classify multiple documents from various sources.
         
         Args:
-            file_paths: List of paths to documents
+            sources: List of document sources (paths, bytes, or text)
+            source_type: Type of the sources ("file", "bytes", or "text")
+            metadata: Optional list of metadata dicts for each source
             max_concurrent: Maximum number of concurrent classifications
             
         Returns:

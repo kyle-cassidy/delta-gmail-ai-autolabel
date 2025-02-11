@@ -2,10 +2,115 @@
 # Defines the different types of regulatory actions (registration, licensing, tonnage, etc.)
 # Includes state-specific terms, document markers, and regex patterns for identification.
 
+version: "1.0.0"
+last_updated: "2024-03-14"
+description: "Defines regulatory actions, document types, status types, and workflow status"
+
 regulatory_actions:
+  # Document classification structure
+  base_types:
+    NEW:
+      description: "New product registration application"
+      patterns:
+        - regex: "(?i)\\b(new|initial)\\s+(?:product\\s+)?registration\\b"
+          confidence: 0.9
+        - regex: "(?i)\\bfirst\\s+time\\s+registration\\b"
+          confidence: 0.8
+      required_fields: ["company_name", "product_name", "state"]
+      
+    RENEW:
+      description: "Renewal application for existing registration"
+      patterns:
+        - regex: "(?i)\\b(?:registration\\s+)?renewal\\b"
+          confidence: 0.9
+        - regex: "(?i)\\brenew(?:al)?\\s+(?:of\\s+)?registration\\b"
+          confidence: 0.9
+      required_fields: ["company_name", "product_name", "state", "previous_registration_number"]
+      
+    TONNAGE:
+      description: "Tonnage reporting for distributed products"
+      patterns:
+        - regex: "(?i)\\btonnage\\s+report\\b"
+          confidence: 0.95
+        - regex: "(?i)\\b(?:quarterly|annual)\\s+tonnage\\b"
+          confidence: 0.9
+      required_fields: ["company_name", "reporting_period", "state"]
+      
+    CERT:
+      description: "Registration certificate or approval"
+      patterns:
+        - regex: "(?i)\\b(?:registration\\s+)?certificate\\b"
+          confidence: 0.95
+        - regex: "(?i)\\bcertificate\\s+of\\s+registration\\b"
+          confidence: 0.95
+      required_fields: ["company_name", "product_name", "registration_number", "state"]
+      
+    LABEL:
+      description: "Product label or label amendment"
+      patterns:
+        - regex: "(?i)\\bproduct\\s+label\\b"
+          confidence: 0.95
+        - regex: "(?i)\\blabel\\s+amendment\\b"
+          confidence: 0.9
+      required_fields: ["company_name", "product_name", "state"]
+
+  # GTD-style status classification
+  status_types:
+    ACTION_REQUIRED:
+      description: "Requires immediate action or response"
+      patterns:
+        - regex: "(?i)\\b(due|submit|required|payment|deadline)\\b"
+          confidence: 0.9
+        - regex: "(?i)\\bby\\s+\\w+\\s+\\d{1,2}(?:st|nd|rd|th)?\\b"
+          confidence: 0.9
+        - regex: "(?i)\\baction\\s+required\\b"
+          confidence: 0.95
+      flags: ["URGENT", "DUE_DATE"]
+      
+    INFO:
+      description: "Informational only, no action needed"
+      patterns:
+        - regex: "(?i)\\b(confirm|receipt|approved|completed|processed)\\b"
+          confidence: 0.9
+        - regex: "(?i)\\bfor\\s+your\\s+(?:records|information)\\b"
+          confidence: 0.9
+        - regex: "(?i)\\bhas\\s+been\\s+(?:received|processed|approved)\\b"
+          confidence: 0.9
+      flags: ["NOTIFICATION"]
+      
+    REFERENCE:
+      description: "Important reference material to retain"
+      patterns:
+        - regex: "(?i)\\b(keep|retain|reference|official)\\b"
+          confidence: 0.9
+        - regex: "(?i)\\bfor\\s+your\\s+records\\b"
+          confidence: 0.95
+        - regex: "(?i)\\bregistration\\s+certificate\\b"
+          confidence: 0.95
+      flags: ["PERMANENT_RECORD"]
+
+  # Workflow status tracking
+  workflow_status:
+    SUBMITTED:
+      description: "Document has been submitted"
+      next_states: ["PENDING", "APPROVED", "REJECTED"]
+      
+    PENDING:
+      description: "Under review or awaiting processing"
+      next_states: ["APPROVED", "REJECTED"]
+      
+    APPROVED:
+      description: "Document has been approved"
+      next_states: []
+      
+    REJECTED:
+      description: "Document has been rejected"
+      next_states: []
+
+  # Detailed regulatory action definitions with document markers
   registration:
     canonical_name: "Product Registration"
-    document_markers:  # Information to help identify registration-related documents
+    document_markers:
       required_fields:
         - "company name"
         - "product name"
