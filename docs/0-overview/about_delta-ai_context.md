@@ -12,7 +12,7 @@ Our operational environment requires understanding of:
   - Validate data across multiple regulatory frameworks including EPA, NOP, OMRI, and state-specific guidelines
 
 * Regulatory Complexity
-  - Each jurisdiction maintains unique requirements and submission formats
+  - Each jurisdiction maintains unique requirements and sub$$mission formats
   - Requirements frequently update and change across different regulatory bodies
   - Compliance verification requires cross-referencing multiple regulatory standards
 

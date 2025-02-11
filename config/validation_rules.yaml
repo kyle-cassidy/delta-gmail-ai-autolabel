@@ -1,0 +1,43 @@
+# validation_rules.yaml
+# Defines rules for validating extracted data, such as registration numbers, dates, etc.
+
+validation_rules:
+  registration_number:
+    state_specific:
+      AL:
+        pattern: "^[A-Z]{3}-\\d{4}$"  # Example: "ALF-2024"
+        example: "ALF-2024"
+      CA:
+        pattern: "^\\d{4}-\\d{4}$"
+        example: "1234-5678"
+      NY:
+        pattern: "^NY-\\d{6}$"
+        example: "NY-123456"
+      # Add more states as needed...
+    default: # Optional default if no state-specific pattern
+      pattern: "^\\w+$"  # Match any word characters (alphanumeric + underscore)
+
+  guaranteed_analysis:
+    pattern: "^\\d+-\\d+-\\d+(?:-\\d+)?$"  # N-P-K(-Micronutrients)
+    example: "10-10-10"
+    # Could add more specific rules for different fertilizer types if needed
+
+  fee_amount:
+    pattern: "^\\d+(\\.\\d{1,2})?$"  # Match a number with optional 1 or 2 decimal places
+    example: "25.00"
+
+  date:
+    pattern: "^\\d{4}-\\d{2}-\\d{2}$"  # YYYY-MM-DD format
+    example: "2024-03-15"
+    # Could add more sophisticated date validation (e.g., checking for valid months/days)
+
+  state_code:
+      pattern: "^[A-Z]{2}$"
+      example: "CA"
+
+  #Add tonnage specific validation:
+  tonnage_amount:
+    pattern: "^\\d+(\\.\\d+)?$"  #digits with optional decimal
+    example: "277.78"
+
+  # Add more validation rules as needed for other fields (e.g., company name, product name, etc.)

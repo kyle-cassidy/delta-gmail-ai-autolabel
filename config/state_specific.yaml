@@ -1,0 +1,176 @@
+# state_specific.yaml
+# Contains state-specific overrides and additions to the general ontology rules.
+
+state_specific:
+  CA:
+    requires_efficacy: true
+    special_terms:
+      soil_amendment: "Auxiliary soil and plant substance"
+    tonnage_frequency: "Quarterly"
+    tonnage_fee_unit: "$/Dollar Amount Sold" #Unique
+    tonnage_fee: 0.0025 # Per dollar
+    heavy_metals_tested: ["Arsenic (As)", "Cadmium (Cd)", "Cobalt (Co)", "Copper (Cu)", "Lead (Pb)", "Mercury (Hg)", "Molybdenum (Mo)", "Nickel (Ni)", "Selenium (Se)"]
+    pathogens_tested: ["Salmonella", "E. coli", "Fecal Coliforms"]
+    renewal_months: ["01", "07"] #Semi-annual, specific months
+
+  OR:
+    requires_heavy_metals: true
+    heavy_metals_tested:  ["Arsenic (As)", "Cadmium (Cd)", "Lead (Pb)", "Mercury (Hg)", "Nickel (Ni)"]
+    renewal_month: 12 #Annual
+
+  WA:
+    tonnage_frequency: "Semi-Annual" #can be annual if less than 100 tons, or semi-annual
+    heavy_metals_tested: ["Arsenic (As)", "Cadmium (Cd)", "Cobalt (Co)", "Lead (Pb)", "Mercury (Hg)", "Molybdenum (Mo)", "Nickel (Ni)", "Selenium (Se)", "Zinc (Zn)"]
+    renewal_month: 12
+  
+  AZ:
+     tonnage_frequency: "Quarterly"
+     renewal_month: 6 #Biennial renewal
+
+  CO:
+     renewal_month: 1
+
+  CT:
+    renewal_month: 6
+
+  DE:
+     renewal_month: 12
+
+  FL:
+    renewal_month: 7
+    tonnage_frequency: "Monthly" #Changed as of the data provided.
+
+  GA:
+     renewal_month: 6
+     tonnage_frequency: "Quarterly"
+
+  HI:
+     renewal_month: 12 # 12-month from approval
+  
+  IA:
+     renewal_month: 6
+     tonnage_frequency: "Semi-Annual"
+
+  ID:
+     renewal_month: 1
+     
+  IL:
+    renewal_month: 12
+
+  IN:
+     renewal_month: 6
+     tonnage_frequency: "Semi-Annual"
+
+  KS:
+     renewal_month: 6
+     tonnage_frequency: "Quarterly"
+
+  KY:
+     renewal_month: 12
+     tonnage_frequency: "Quarterly"
+
+  LA:
+    renewal_month: 12
+    tonnage_frequency: "Quarterly"
+
+  MA:
+    renewal_month: 1
+    tonnage_frequency: "Semi-Annual"
+    heavy_metals_tested: ["Arsenic (As)", "Cadmium (Cd)", "Cobalt (Co)", "Copper (Cu)", "Lead (Pb)", "Mercury (Hg)", "Molybdenum (Mo)", "Nickel (Ni)", "Selenium (Se)"]
+
+  MD:
+    renewal_month: 12
+    tonnage_frequency: "Semi-Annual"
+    heavy_metals_tested: ["Arsenic (As)", "Cadmium (Cd)", "Cobalt (Co)", "Copper (Cu)", "Lead (Pb)", "Mercury (Hg)", "Molybdenum (Mo)", "Nickel (Ni)", "Selenium (Se)"]
+
+  ME:
+    renewal_month: 12
+    tonnage_frequency: "Annual"
+
+  MI:
+    renewal_month: 12
+    tonnage_frequency: "Annual"
+
+  MN:
+    renewal_month: 12
+
+  MS:
+    renewal_month: 6
+    tonnage_frequency: "Quarterly"
+
+  MO:
+    renewal_month: 6
+    tonnage_frequency: "Monthly" #For some products
+
+  MT:
+     renewal_month: 12
+     tonnage_frequency: "Semi-Annual"
+
+  NC:
+     renewal_month: 6 #Most products renew in June
+     tonnage_frequency: "Monthly"
+
+  ND:
+    renewal_month: 1 #Fertilizer tonnage due annually in Jan.
+    tonnage_frequency: "Annual" #Fertilizer
+
+  NE:
+    renewal_month: 12
+
+  NH:
+     renewal_month: 12
+     tonnage_frequency: "Semi-Annual"
+
+  NJ:
+     renewal_month: 6
+     tonnage_frequency: "Semi-Annual"
+
+  NM:
+    renewal_month: 12
+    tonnage_frequency: "Quarterly"
+
+  NY:
+    renewal_month: 12 #Biennial renewals
+
+  OH:
+    renewal_month: 12
+    tonnage_frequency: "Annual"
+
+  OK:
+    renewal_month: 12 #Annual renewals
+    tonnage_frequency: "Semi-Annual" #Semi annual Tonnage
+
+  PA:
+    renewal_month: 6
+
+  RI:
+     renewal_month: 12
+
+  SC:
+    renewal_month: 6
+    tonnage_frequency: "Quarterly"
+
+  SD:
+     renewal_month: 12
+
+  TN:
+    renewal_month: 6 #June
+    tonnage_frequency: "Annual"
+
+  TX:
+    renewal_month: 9
+
+  UT:
+    renewal_month: 12
+
+  VA:
+     renewal_month: 6
+
+  VT:
+    renewal_month: 12
+
+  WA:
+    renewal_month: 12
+
+  WV:
+     renewal_month: 6
