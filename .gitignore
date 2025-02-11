@@ -34,10 +34,24 @@ ENV/
 *.swp
 *.swo
 
+# System and Cache Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.log
+*.cache
+
 # Testing
 .coverage
 .pytest_cache/
 htmlcov/
+coverage.xml
+junit.xml
+test-results/
 
 # Project specific
 output/*
@@ -50,7 +64,6 @@ secrets/*
 /notes/*
 
 .op/
-.DS_Store
 
 /data
 /data/clients/*.numbers
