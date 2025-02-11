@@ -1,168 +1,122 @@
 """
-ContentExtractionService: Manages content parsing and extraction.
-
-Responsibilities:
-- Coordinates multiple parser types
-- Extracts structured data from emails
-- Manages text extraction from attachments
-- Handles different document formats
-- Entity recognition and extraction
-- Content normalization
+Content Extraction Service using Google's Gemini Flash
 """
-
-from typing import Any, Dict, List, Optional
-from bs4 import BeautifulSoup
-import base64
-import re
-from datetime import datetime
+import os
+from typing import Dict, List, Optional, Union
+import google.generativeai as genai
+from pathlib import Path
+import json
 
 class ContentExtractionService:
-    def __init__(self, storage_service=None, ocr_service=None):
-        self.storage = storage_service
-        self.ocr = ocr_service
-
-    async def extract_content(self, message: Any) -> Dict[str, Any]:
+    def __init__(self, api_key: Optional[str] = None):
+        """Initialize the Gemini content extraction service."""
+        self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
+        if not self.api_key:
+            raise ValueError("Google API key is required")
+        
+        # Configure the Gemini API
+        genai.configure(api_key=self.api_key)
+        # Initialize the model (using Flash for optimal speed/quality balance)
+        self.model = genai.GenerativeModel('gemini-pro-vision')
+        
+    async def extract_content(self, file_path: Union[str, Path]) -> Dict:
         """
-        Extract content from email message and its attachments.
+        Extract content from a document using Gemini Flash.
         
         Args:
-            message: Email message object
+            file_path: Path to the document file (PDF, image, etc.)
             
         Returns:
-            Dictionary containing extracted content and metadata
+            Dict containing extracted information including:
+            - document_type: The classified type of document
+            - entities: Key entities found (companies, products, etc.)
+            - key_fields: Important form fields and values
+            - tables: Any tabular data found
+            - summary: Brief summary of the document
         """
-        content = {
-            "text": "",
-            "html": None,
-            "format": "unknown",
-            "attachments": [],
-            "embedded_images": [],
-            "urls": [],
-            "tables": [],
-            "metadata": {
-                "timestamp": datetime.utcnow().isoformat(),
-                "has_attachments": bool(message.attachments),
-                "content_types": []
+        try:
+            # Load the document
+            file_path = Path(file_path)
+            if not file_path.exists():
+                raise FileNotFoundError(f"File not found: {file_path}")
+                
+            # Prepare the prompt for Gemini
+            prompt = """
+            Please analyze this document and extract the following information in JSON format:
+            {
+                "document_type": "The type of regulatory document (e.g., registration, renewal, tonnage report)",
+                "entities": {
+                    "companies": ["List of company names mentioned"],
+                    "products": ["List of product names/types mentioned"],
+                    "states": ["List of US states mentioned"]
+                },
+                "key_fields": {
+                    "dates": ["Any important dates mentioned"],
+                    "registration_numbers": ["Any registration or license numbers"],
+                    "amounts": ["Any monetary amounts or quantities"]
+                },
+                "tables": ["Array of any tables found, each as a list of rows"],
+                "summary": "A brief summary of the document's purpose and content"
             }
-        }
-
-        # Extract text content
-        if message.plain:
-            content["text"] = message.plain
-            content["format"] = "plain"
-            content["metadata"]["content_types"].append("text/plain")
-
-        # Extract HTML content
-        if message.html:
-            content["html"] = message.html
-            if not message.plain:  # Only set format to html if no plain text
-                content["format"] = "html"
-            content["metadata"]["content_types"].append("text/html")
             
-            # Parse HTML content
-            await self._parse_html_content(message.html, content)
-
-        # Process attachments
-        if message.attachments:
-            await self._process_attachments(message.attachments, content)
-
-        # Store extracted content if storage service is available
-        if self.storage:
-            await self.storage.store_extracted_content(
-                message_id=message.id,
-                content=content
-            )
-
-        return content
-
-    async def _parse_html_content(self, html: str, content: Dict[str, Any]) -> None:
-        """Parse HTML content to extract additional information."""
-        soup = BeautifulSoup(html, 'lxml')
+            Please be precise and only include information that is explicitly present in the document.
+            If any field has no relevant information, return an empty array or null.
+            """
+            
+            # Process with Gemini
+            with open(file_path, 'rb') as f:
+                response = self.model.generate_content([prompt, f])
+                
+            # Parse and validate the response
+            try:
+                result = json.loads(response.text)
+                return self._validate_extraction(result)
+            except json.JSONDecodeError:
+                raise ValueError("Failed to parse Gemini response as JSON")
+                
+        except Exception as e:
+            raise Exception(f"Content extraction failed: {str(e)}")
+            
+    def _validate_extraction(self, result: Dict) -> Dict:
+        """Validate and clean up the extraction results."""
+        required_keys = ['document_type', 'entities', 'key_fields', 'tables', 'summary']
         
-        # Extract text if not already present
-        if not content["text"]:
-            content["text"] = soup.get_text()
+        # Ensure all required keys exist
+        for key in required_keys:
+            if key not in result:
+                result[key] = None
+                
+        # Ensure nested dictionaries exist
+        if result['entities'] is None:
+            result['entities'] = {'companies': [], 'products': [], 'states': []}
+        if result['key_fields'] is None:
+            result['key_fields'] = {'dates': [], 'registration_numbers': [], 'amounts': []}
+            
+        return result
+
+    async def batch_extract(self, file_paths: List[Union[str, Path]]) -> List[Dict]:
+        """
+        Process multiple documents in batch.
         
-        # Extract URLs
-        for link in soup.find_all('a'):
-            url = link.get('href')
-            if url and url.startswith('http'):
-                content["urls"].append(url)
-        
-        # Extract tables
-        for table in soup.find_all('table'):
-            parsed_table = []
-            for row in table.find_all('tr'):
-                parsed_row = [cell.get_text(strip=True) for cell in row.find_all(['td', 'th'])]
-                if parsed_row:
-                    parsed_table.append(parsed_row)
-            if parsed_table:
-                content["tables"].append(parsed_table)
-        
-        # Extract embedded images
-        for img in soup.find_all('img'):
-            src = img.get('src', '')
-            if src.startswith('data:image'):
-                try:
-                    # Extract base64 image data
-                    img_data = re.sub('^data:image/.+;base64,', '', src)
-                    img_bytes = base64.b64decode(img_data)
-                    
-                    # Perform OCR if service is available
-                    ocr_text = None
-                    if self.ocr:
-                        ocr_text = await self.ocr.extract_text(img_bytes)
-                    
-                    content["embedded_images"].append({
-                        "type": "embedded",
-                        "format": src.split(';')[0].split('/')[1],
-                        "ocr_text": ocr_text
-                    })
-                except Exception:
-                    # Skip invalid base64 data
-                    continue
-
-    async def _process_attachments(self, attachments: List[Any], content: Dict[str, Any]) -> None:
-        """Process email attachments."""
-        for attachment in attachments:
-            att_content = {
-                "filename": attachment.filename,
-                "type": self._get_attachment_type(attachment.filename),
-                "size": len(attachment.content) if attachment.content else 0,
-                "extracted_text": None,
-                "ocr_text": None
-            }
-
-            if att_content["type"] == "pdf":
-                # Extract text from PDF
-                if self.storage:
-                    att_content["extracted_text"] = await self.storage.extract_pdf_text(
-                        attachment.content
-                    )
-
-            elif att_content["type"] == "image":
-                # Perform OCR on image
-                if self.ocr and attachment.content:
-                    att_content["ocr_text"] = await self.ocr.extract_text(
-                        attachment.content
-                    )
-
-            content["attachments"].append(att_content)
-            content["metadata"]["content_types"].append(
-                f"attachment/{att_content['type']}"
-            )
-
-    def _get_attachment_type(self, filename: str) -> str:
-        """Determine attachment type from filename."""
-        ext = filename.lower().split('.')[-1]
-        if ext in ['pdf']:
-            return 'pdf'
-        elif ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp']:
-            return 'image'
-        elif ext in ['doc', 'docx']:
-            return 'word'
-        elif ext in ['xls', 'xlsx']:
-            return 'excel'
-        elif ext in ['txt', 'csv']:
-            return 'text'
-        return 'other'
+        Args:
+            file_paths: List of paths to documents
+            
+        Returns:
+            List of extraction results, one per document
+        """
+        results = []
+        for file_path in file_paths:
+            try:
+                result = await self.extract_content(file_path)
+                results.append({
+                    'file_path': str(file_path),
+                    'success': True,
+                    'data': result
+                })
+            except Exception as e:
+                results.append({
+                    'file_path': str(file_path),
+                    'success': False,
+                    'error': str(e)
+                })
+        return results
