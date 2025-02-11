@@ -112,4 +112,125 @@ def test_classifier_info(docling_classifier):
     assert "name" in info
     assert "version" in info
     assert "Docling" in info["name"]
-    assert "features" in info 
+    assert "features" in info
+
+def test_docling_classifier_initialization(test_config_dir):
+    """Test that the DoclingClassifier initializes correctly."""
+    classifier = DoclingClassifier(config_dir=test_config_dir)
+    assert classifier is not None
+    assert classifier.domain_config is not None
+
+@pytest.mark.asyncio
+async def test_classify_text_document(test_config_dir, mock_docling_doc, monkeypatch):
+    """Test classification of a text document."""
+    # Mock the DocProcessor to return our mock document
+    class MockProcessor:
+        def process_text(self, text):
+            return mock_docling_doc
+            
+    classifier = DoclingClassifier(config_dir=test_config_dir)
+    classifier.processor = MockProcessor()
+    
+    # Test document text
+    doc_text = """
+    ARB License Application
+    State of Alabama
+    License Number: LIC-2024-001
+    Date: 2024-02-11
+    """
+    
+    result = await classifier.classify_document(
+        doc_text,
+        source_type="text"
+    )
+    
+    assert isinstance(result, ClassificationResult)
+    assert result.document_type == "license"
+    assert "ARB" in result.entities["companies"]
+    assert "AL" in result.entities["states"]
+    assert result.confidence > 0.5
+    assert "LIC-2024-001" in result.key_fields["registration_numbers"]
+
+@pytest.mark.asyncio
+async def test_classify_batch_documents(test_config_dir, mock_docling_doc, monkeypatch):
+    """Test batch classification of documents."""
+    # Mock the DocProcessor
+    class MockProcessor:
+        def process_text(self, text):
+            return mock_docling_doc
+            
+    classifier = DoclingClassifier(config_dir=test_config_dir)
+    classifier.processor = MockProcessor()
+    
+    # Test documents
+    documents = [
+        "Document 1 content",
+        "Document 2 content"
+    ]
+    
+    results = await classifier.classify_batch(
+        documents,
+        source_type="text"
+    )
+    
+    assert len(results) == 2
+    for result in results:
+        assert isinstance(result, ClassificationResult)
+        assert result.document_type == "license"
+        assert result.confidence > 0.5
+
+@pytest.mark.asyncio
+async def test_error_handling(test_config_dir):
+    """Test error handling in the classifier."""
+    classifier = DoclingClassifier(config_dir=test_config_dir)
+    
+    # Test with invalid source type
+    with pytest.raises(ValueError):
+        await classifier.classify_document(
+            "test content",
+            source_type="invalid_type"
+        )
+    
+    # Test with non-existent file
+    with pytest.raises(FileNotFoundError):
+        await classifier.classify_document(
+            Path("/nonexistent/file.pdf"),
+            source_type="file"
+        )
+
+def test_metadata_enhancement(test_config_dir, mock_docling_doc, monkeypatch):
+    """Test that metadata enhances classification results."""
+    # Mock the DocProcessor
+    class MockProcessor:
+        def process_text(self, text):
+            return mock_docling_doc
+            
+    classifier = DoclingClassifier(config_dir=test_config_dir)
+    classifier.processor = MockProcessor()
+    
+    # Create a test document result
+    doc_result = {
+        "document_type": "license",
+        "entities": {
+            "companies": ["ARB"],
+            "states": ["AL"]
+        },
+        "key_fields": {
+            "dates": ["2024-02-11"],
+            "registration_numbers": ["LIC-2024-001"]
+        },
+        "metadata": {
+            "confidence": 0.85
+        }
+    }
+    
+    # Test metadata
+    metadata = {
+        "email_subject": "ARB CA License Application",
+        "email_from": "test@example.com"
+    }
+    
+    enhanced = classifier._enhance_with_metadata(doc_result, metadata)
+    
+    assert "CA" in enhanced["entities"]["states"]
+    assert enhanced["metadata"]["source_metadata"] == metadata 

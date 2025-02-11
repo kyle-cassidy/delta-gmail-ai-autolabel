@@ -47,12 +47,19 @@ def test_create_unknown_classifier():
     with pytest.raises(ValueError):
         ClassifierFactory.create_classifier("unknown")
 
-def test_create_gemini_classifier():
+def test_create_gemini_classifier(test_config_dir):
     """Test creating a Gemini classifier."""
-    classifier = ClassifierFactory.create_classifier("gemini", api_key="test_key")
+    classifier = ClassifierFactory.create_classifier(
+        "gemini", 
+        api_key="test_key",
+        config_dir=test_config_dir
+    )
     assert isinstance(classifier, GeminiClassifier)
 
-def test_create_docling_classifier():
+def test_create_docling_classifier(test_config_dir):
     """Test creating a Docling classifier."""
-    classifier = ClassifierFactory.create_classifier("docling")
+    classifier = ClassifierFactory.create_classifier(
+        "docling",
+        config_dir=test_config_dir
+    )
     assert isinstance(classifier, DoclingClassifier) 

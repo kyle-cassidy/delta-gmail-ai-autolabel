@@ -70,7 +70,7 @@ status_workflows:
       - name: "verified" # Final, good state
         next_states: []
         description: "Tonnage report has been verified and accepted."
-       - name: "needs_correction"
+      - name: "needs_correction"
         next_states: ["submitted"]
         description: "Tonnage report needs corrections"
       - name: "delinquent" # Final state, if no action taken after reminders
@@ -114,7 +114,7 @@ status_workflows:
       - name: "rejected"
         next_states: []
         description: "Amendment has been rejected."
-       - name: "needs_info"
+      - name: "needs_info"
         next_states: ["submitted", "rejected"]
         description: "Additional information requested for amendment."
       - name: "withdrawn" # Added to allow company to withdraw

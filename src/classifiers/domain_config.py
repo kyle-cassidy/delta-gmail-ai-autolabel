@@ -39,8 +39,11 @@ class DomainConfig:
         self.validation_rules = self._load_yaml("validation_rules.yaml")
         self.relationships = self._load_yaml("relationships.yaml")
         self.state_patterns = self._load_yaml("state_patterns.yaml")
-        self.company_codes = self._load_yaml("company_codes.yaml")
+        self.company_codes = self._load_yaml("clients.yaml")
         self.document_types = self._load_yaml("document_types.yaml")
+        
+        # Load and process client data
+        self.client_data = self._load_client_patterns()
         
         # Check for required migrations
         self._check_migrations()
@@ -115,12 +118,31 @@ class DomainConfig:
                     )
         
         # Compile company name patterns
-        for code, company in self.company_codes.get("companies", {}).items():
-            # Create pattern from company name and aliases
-            name_patterns = [re.escape(company["name"])] + [
-                re.escape(alias) for alias in company.get("aliases", [])
-            ]
-            pattern = "|".join(name_patterns)
+        for code, company in self.client_data.items():
+            # Create pattern from company name, aliases, and patterns
+            patterns = []
+            
+            # Add company name
+            if name := company.get("name"):
+                patterns.append(re.escape(name))
+                # Add partial name matches (for each word in the name)
+                words = name.split()
+                if len(words) > 1:  # Only add word patterns if name has multiple words
+                    for word in words:
+                        if len(word) > 3:  # Only match on words longer than 3 chars
+                            patterns.append(re.escape(word))
+            
+            # Add aliases
+            patterns.extend(re.escape(alias) for alias in company.get("aliases", []))
+            
+            # Add provided patterns
+            patterns.extend(pattern for pattern in company.get("patterns", []))
+            
+            # Add code pattern
+            patterns.append(rf"{code}\b")
+            
+            # Join all patterns with OR
+            pattern = "|".join(f"({p})" for p in patterns)
             self.patterns["companies"][code] = re.compile(
                 f"(?i)\\b({pattern})\\b"
             )
@@ -219,4 +241,112 @@ class DomainConfig:
             List of related document types
         """
         relationships = self.relationships.get("document_relationships", {})
-        return relationships.get(doc_type, []) 
+        return relationships.get(doc_type, [])
+    
+    def _load_client_patterns(self) -> Dict:
+        """Load and compile client patterns."""
+        client_patterns_file = self.config_dir / "clients.yaml"
+        if not client_patterns_file.exists():
+            logger.warning("Client patterns file not found")
+            return {}
+            
+        with open(client_patterns_file) as f:
+            config = yaml.safe_load(f)
+            
+        companies = config.get("companies", {})
+        
+        # Process each client to add patterns
+        for code, data in companies.items():
+            # Add standard patterns based on company name and code
+            patterns = []
+            
+            # Add company name pattern
+            if name := data.get("name"):
+                patterns.append(re.escape(name))  # Exact company name
+                
+            # Add aliases patterns
+            for alias in data.get("aliases", []):
+                patterns.append(re.escape(alias))
+                
+            # Add client code pattern
+            patterns.append(rf"{code}\b")  # Code with word boundary
+            
+            # Add email domain patterns
+            for domain in data.get("domains", []):
+                patterns.append(rf"@{re.escape(domain)}")
+                
+            # Store patterns with the client data
+            data["patterns"] = patterns
+            
+        return companies
+
+    def get_client_by_company(self, company_name: str) -> Optional[str]:
+        """Get client code by exact company name match."""
+        for code, data in self.client_data.items():
+            if data.get("name") == company_name:
+                return code
+        return None
+        
+    def get_client_by_email_domain(self, email: str) -> Optional[str]:
+        """Get client code by email domain."""
+        domain = email.split("@")[-1].lower()
+        for code, data in self.client_data.items():
+            if domain in data.get("domains", []):
+                return code
+        return None
+        
+    def _identify_client(self, text: str) -> Tuple[Optional[str], float]:
+        """Identify client from text with confidence score.
+        
+        Args:
+            text: Text to analyze
+            
+        Returns:
+            Tuple of (client_code, confidence_score)
+        """
+        logger.debug(f"Identifying client from text: {text}")
+        
+        # Check exact company name match first (highest confidence)
+        for code, data in self.client_data.items():
+            if data.get("name"):
+                company_name = data["name"]
+                if company_name == text.strip():  # Exact match
+                    logger.debug(f"Found exact company name match: {code}")
+                    return code, 1.0
+                elif company_name in text:  # Contains full name
+                    logger.debug(f"Found company name in text: {code}")
+                    return code, 0.9
+                    
+        # Check aliases
+        for code, data in self.client_data.items():
+            for alias in data.get("aliases", []):
+                if alias == text.strip():  # Exact alias match
+                    logger.debug(f"Found exact alias match: {code}")
+                    return code, 0.95
+                elif alias in text:  # Contains alias
+                    logger.debug(f"Found alias in text: {code}")
+                    return code, 0.85
+                    
+        # Check email domains
+        for code, data in self.client_data.items():
+            for domain in data.get("domains", []):
+                if f"@{domain}" in text.lower():
+                    logger.debug(f"Found email domain match: {code}")
+                    return code, 0.95
+                    
+        # Check code patterns (e.g., "EEA", "ARB")
+        for code, data in self.client_data.items():
+            if re.search(rf"\b{code}\b", text):
+                logger.debug(f"Found code pattern match: {code}")
+                return code, 0.8
+                
+        # Check compiled patterns for partial matches
+        logger.debug("Checking compiled patterns:")
+        for code, pattern in self.patterns["companies"].items():
+            logger.debug(f"Pattern for {code}: {pattern.pattern}")
+            if pattern.search(text):
+                logger.debug(f"Found pattern match: {code}")
+                return code, 0.75
+                
+        logger.debug("No match found")
+        return None, 0.0 

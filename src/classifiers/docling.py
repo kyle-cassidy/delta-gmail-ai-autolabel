@@ -4,7 +4,7 @@ Docling Document Classifier Implementation
 Uses IBM's open-source Docling library for high-fidelity document parsing and classification.
 Runs locally and preserves document structure.
 """
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Tuple
 from pathlib import Path
 import asyncio
 import json
@@ -230,31 +230,63 @@ class DoclingClassifier(BaseDocumentClassifier):
             "amounts": amounts
         }
     
-    def _convert_to_classification_result(self, doc_result: Dict) -> ClassificationResult:
+    def _identify_client(self, doc_text: str, companies: List[str]) -> Tuple[str | None, float]:
+        """
+        Identify client code from document text and extracted companies.
+        
+        Returns:
+            Tuple of (client_code, confidence)
+        """
+        # Check against known client patterns
+        client_matches = []
+        for code, patterns in self.domain_config.client_patterns.items():
+            for pattern in patterns:
+                if pattern.search(doc_text):
+                    client_matches.append((code, 0.9))
+                    
+        # Check extracted company names against client database
+        for company in companies:
+            if client_code := self.domain_config.get_client_by_company(company):
+                client_matches.append((client_code, 0.8))
+                
+        if not client_matches:
+            return None, 0.0
+            
+        # Return highest confidence match
+        return max(client_matches, key=lambda x: x[1])
+
+    def _convert_to_classification_result(self, raw_result: Dict) -> ClassificationResult:
         """Convert Docling output to standardized ClassificationResult."""
         # Calculate confidence based on Docling's metrics and domain validation
-        base_confidence = doc_result.get("metadata", {}).get("confidence", 0.0)
-        domain_confidence = self._calculate_domain_confidence(doc_result)
+        base_confidence = raw_result.get("metadata", {}).get("confidence", 0.0)
+        domain_confidence = self._calculate_domain_confidence(raw_result)
         confidence = (base_confidence + domain_confidence) / 2
         
         # Generate any warning flags
-        flags = self._generate_flags(doc_result, confidence)
+        flags = self._generate_flags(raw_result, confidence)
         
         # Create metadata
         metadata = {
-            **doc_result.get("metadata", {}),
+            **raw_result.get("metadata", {}),
             'classifier': self.get_classifier_info()['name'],
             'domain_confidence': domain_confidence
         }
         
+        # Identify client
+        client_code, client_confidence = self._identify_client(
+            raw_result.get('summary', ''),
+            raw_result.get('entities', {}).get('companies', [])
+        )
+        
         # Construct the result
         return ClassificationResult(
-            document_type=doc_result.get("document_type"),
-            confidence=confidence,
-            entities=doc_result.get("entities", {}),
-            key_fields=doc_result.get("key_fields", {}),
+            document_type=raw_result.get("document_type"),
+            client_code=client_code,
+            confidence=min(confidence, client_confidence),
+            entities=raw_result.get("entities", {}),
+            key_fields=raw_result.get("key_fields", {}),
             metadata=metadata,
-            summary=doc_result.get("summary"),
+            summary=raw_result.get("summary"),
             flags=flags
         )
     

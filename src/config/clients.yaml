@@ -1,0 +1,805 @@
+# Client Information and Mappings
+version: "1.0.0"
+last_updated: "2024-03-14"
+description: "Comprehensive company information including standardized codes, matching patterns, and metadata"
+
+companies:
+  AAS:
+    name: "Able Ag Solutions, LLC"
+    aliases:
+      - "Able Ag"
+      - "Able Ag Solutions"
+    patterns:
+      - "Able\\s+Ag\\s+Solutions?"
+      - "AAS\\b"
+    domains:
+      - "ableagsolutions.com"
+    contact_info:
+      primary_contact: "Pieter Booysen"
+      email: "pieterbooysen@ableagsolutions.com"
+      phone: "(859) 766-6489"
+    metadata:
+      account_type: "manufacturer"
+      active_states:
+        - "FL"
+      preferred_communication: "email"
+
+  AGR:
+    name: "Agrauxine Corp."
+    aliases:
+      - "Agrauxine Lesaffre"
+      - "Agrauxine"
+    patterns:
+      - "Agrauxine\\s+Corp\\.?"
+      - "AGR\\b"
+    domains:
+      - "agrauxine.lesaffre.com"
+    contact_info:
+      primary_contact: "Jason Duncan"
+      email: "j.duncan@agrauxine.lesaffre.com"
+      phone: "(414) 559-0081"
+    metadata:
+      account_type: "manufacturer"
+      active_states:
+        - "OH"
+      preferred_communication: "email"
+
+  AND:
+    name: "Andermatt US"
+    aliases:
+      - "Andermatt USA"
+    patterns:
+      - "Andermatt\\s+US"
+      - "AND\\b"
+    domains:
+      - "andermatt.usa.com"
+    contact_info:
+      primary_contact: "Sarah Risorto"
+      email: "sarah.risorto@andermatt.usa.com"
+      phone: "(541) 705-0015"
+    metadata:
+      account_type: "manufacturer"
+      active_states:
+        - "NJ"
+      preferred_communication: "email"
+
+  AQB:
+    name: "AquaBella Organic Solutions LLC"
+    aliases:
+      - "AquaBella"
+      - "AquaBella Organic"
+    patterns:
+      - "AquaBella\\s+Organic\\s+Solutions"
+      - "AQB\\b"
+    domains: []
+    contact_info:
+      primary_contact: null
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states:
+        - "CA"
+      preferred_communication: "email"
+
+  AQT:
+    name: "Aquatrols Corp of American"
+    aliases:
+      - "Aquatrols"
+      - "Aquatrols Corp"
+    patterns:
+      - "Aquatrols\\s+Corp"
+      - "AQT\\b"
+    domains:
+      - "aquatrols.com"
+    contact_info:
+      primary_contact: "Federico De Pellegrini"
+      email: "Federico.DePellegrini@lamberti.com"
+      phone: "+39-0331-715-397"
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  ARB:
+    name: "Arborjet, Inc."
+    aliases:
+      - "Arborjet"
+    patterns:
+      - "Arborjet,?\\s+Inc\\.?"
+      - "Arborjet"
+      - "ARB\\b"
+    domains:
+      - "arborjet.com"
+    contact_info:
+      primary_contact: "Nicholas Millen"
+      email: "nmillen@arborjet.com"
+      phone: "(781) 935-9070"
+    metadata:
+      account_type: "manufacturer"
+      active_states:
+        - "MA"
+      preferred_communication: "email"
+
+  BIN:
+    name: "Bio Insumos Nativa SpA"
+    aliases:
+      - "Bio Insumos"
+      - "Nativa SpA"
+    patterns:
+      - "Bio\\s+Insumos\\s+Nativa"
+      - "BIN\\b"
+    domains:
+      - "bionativa.cl"
+    contact_info:
+      primary_contact: "Lorena Maldonado"
+      email: "lorena.maldonado@bionativa.cl"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  BIO:
+    name: "BIOVERT SL"
+    aliases:
+      - "BIOVERT"
+      - "Biovert"
+    patterns:
+      - "BIOVERT\\s+SL"
+      - "BIO\\b"
+    domains: []
+    contact_info:
+      primary_contact: null
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  BOR:
+    name: "U.S. Borax Inc."
+    aliases:
+      - "U.S. Borax"
+      - "US Borax Inc"
+      - "Rio Tinto Borax"
+    patterns:
+      - "U\\.?S\\.?\\s+Borax"
+      - "BOR\\b"
+    domains:
+      - "riotinto.com"
+    contact_info:
+      primary_contact: "Roger Gunning"
+      email: "daisy.li@riotinto.com"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states:
+        - "IL"
+      preferred_communication: "email"
+
+  BPT:
+    name: "BioPro Technologies, LLC"
+    aliases:
+      - "BioPro Technologies"
+      - "BioPro Tech"
+    patterns:
+      - "BioPro\\s+Technologies?"
+      - "BPT\\b"
+    domains:
+      - "bioprotech.com"
+    contact_info:
+      primary_contact: "Sarah Spatola"
+      email: "sarah@ecologel.com"
+      phone: "(352) 620-2020"
+    metadata:
+      account_type: "manufacturer"
+      active_states:
+        - "FL"
+      preferred_communication: "email"
+
+  CLI:
+    name: "Cytozyme Laboratories, Inc"
+    aliases:
+      - "Cytozymes"
+      - "Cytozymes Labs"
+    patterns:
+      - "Cytozymes\\s+Laboratories?"
+      - "CLI\\b"
+    domains: []
+    contact_info:
+      primary_contact: "Miriam Frugis"
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states:
+        - "NC"
+      preferred_communication: "email"
+
+  COM:
+    name: "Comerco"
+    aliases: []
+    patterns:
+      - "Comerco"
+      - "COM\\b"
+    domains: []
+    contact_info:
+      primary_contact: null
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  COR:
+    name: "Corteva Agriscience LLC"
+    aliases:
+      - "Corteva"
+      - "Corteva Agriscience"
+    patterns:
+      - "Corteva\\s+Agriscience"
+      - "COR\\b"
+    domains:
+      - "corteva.com"
+    contact_info:
+      primary_contact: "Carol Saunders"
+      email: "carol.saunders@corteva.com"
+      phone: "(317) 337-4924"
+    metadata:
+      account_type: "manufacturer"
+      active_states:
+        - "IN"
+      preferred_communication: "email"
+
+  DED:
+    name: "dedetec"
+    aliases: []
+    patterns:
+      - "dedetec"
+      - "DED\\b"
+    domains:
+      - "dedetec.de"
+    contact_info:
+      primary_contact: "Uwe Dederichs"
+      email: "uwe.dederichs@dedetec.de"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  DEL:
+    name: "Delta Analytical Corporation"
+    aliases: []
+    patterns:
+      - "Delta\\s+Analytical"
+      - "DEL\\b"
+    domains: []
+    contact_info:
+      primary_contact: null
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  ECO:
+    name: "Ecologel Solutions, LLC"
+    aliases:
+      - "Ecologel"
+      - "Ecologel Solutions"
+    patterns:
+      - "Ecologel\\s+Solutions?"
+      - "ECO\\b"
+    domains:
+      - "ecologel.com"
+    contact_info:
+      primary_contact: "Sarah Spatola"
+      email: "sarah@ecologel.com"
+      phone: "(352) 602-2020"
+    metadata:
+      account_type: "manufacturer"
+      active_states:
+        - "FL"
+      preferred_communication: "email"
+
+  EEA:
+    name: "Elemental Enzymes Ag and Turf, LLC"
+    aliases:
+      - "Elemental Enzymes"
+      - "Elemental Enzymes Ag"
+      - "EE Agriculture"
+      - "Elemental Enzymes Ag and Turf, LLC"
+    patterns:
+      - "Elemental\\s+Enzymes?"
+      - "EEA\\b"
+    domains:
+      - "elementalenzymes.com"
+    contact_info:
+      primary_contact: "Keith Reding"
+      email: "keith@elementalenzymes.com"
+      phone: "(314) 809-9624"
+    metadata:
+      account_type: "manufacturer"
+      active_states:
+        - "CA"
+        - "FL"
+        - "MO"
+        - "AR"
+      preferred_communication: "email"
+
+  GRN:
+    name: "Greenwise Turf and Ag Solutions"
+    aliases:
+      - "Greenwise"
+      - "Greenwise Turf"
+    patterns:
+      - "Greenwise\\s+Turf"
+      - "GRN\\b"
+    domains:
+      - "greenwiseco.com"
+    contact_info:
+      primary_contact: "Çağatay Tulunay"
+      email: "cagatay@greenwiseco.com"
+      phone: "(786) 943-0606"
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  GWB:
+    name: "Groundwork BioAg Ltd"
+    aliases:
+      - "Groundwork BioAg"
+      - "Groundwork"
+    patterns:
+      - "Groundwork\\s+BioAg"
+      - "GWB\\b"
+    domains:
+      - "groundworkbioag.com"
+    contact_info:
+      primary_contact: null
+      email: "consuelogarcia@bionativa.cl"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  HIC:
+    name: "Hi Cell Crop Science PVt. Ltd"
+    aliases: []
+    patterns:
+      - "Hi\\s+Cell\\s+Crop\\s+Science"
+      - "HIC\\b"
+    domains: []
+    contact_info:
+      primary_contact: null
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  IBA:
+    name: "Indogulf BioAg"
+    aliases:
+      - "Indogulf"
+    patterns:
+      - "Indogulf\\s+BioAg"
+      - "IBA\\b"
+    domains:
+      - "indogulfgroup.com"
+    contact_info:
+      primary_contact: "Biosolutions Team"
+      email: "biosolutions@indogulfgroup.com"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  KIT:
+    name: "KitoZyme"
+    aliases: []
+    patterns:
+      - "KitoZyme"
+      - "KIT\\b"
+    domains:
+      - "kitozyme.com"
+    contact_info:
+      primary_contact: "G Deleixhe"
+      email: "g.deleixhe@kitozyme.com"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  KOC:
+    name: "Kocide / Speiss-Urania"
+    aliases:
+      - "Kocide"
+      - "Speiss-Urania"
+    patterns:
+      - "Kocide"
+      - "Speiss-Urania"
+      - "KOC\\b"
+    domains:
+      - "spiess-urania.com"
+    contact_info:
+      primary_contact: "Jens Niklaus"
+      email: "jens.niklaus@spiess-urania.com"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  LAM:
+    name: "Lamberti, Inc"
+    aliases:
+      - "Lamberti"
+    patterns:
+      - "Lamberti,?\\s+Inc\\.?"
+      - "LAM\\b"
+    domains: []
+    contact_info:
+      primary_contact: null
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  LOC:
+    name: "Locus Agriculture Solutions"
+    aliases:
+      - "Locus Ag"
+      - "Locus Agriculture"
+    patterns:
+      - "Locus\\s+Agriculture"
+      - "LOC\\b"
+    domains: []
+    contact_info:
+      primary_contact: null
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  MAN:
+    name: "Manvert USA LLC"
+    aliases:
+      - "Manvert"
+      - "Manvert USA"
+    patterns:
+      - "Manvert\\s+USA"
+      - "MAN\\b"
+    domains:
+      - "manvert.com"
+    contact_info:
+      primary_contact: "Eli Pifarre"
+      email: "eli.pifarre@manvert.com"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  NLS:
+    name: "NewLeaf Symbiotics"
+    aliases:
+      - "NewLeaf"
+      - "NewLeaf Symbiotics"
+    patterns:
+      - "NewLeaf\\s+Symbiotics"
+      - "NLS\\b"
+    domains: []
+    contact_info:
+      primary_contact: null
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  OMC:
+    name: "Omya Canada"
+    aliases:
+      - "Omya CA"
+    patterns:
+      - "Omya\\s+Canada"
+      - "OMC\\b"
+    domains:
+      - "omya.com"
+    contact_info:
+      primary_contact: "Bradford J. Searcy"
+      email: "bradford.searcy@omya.com"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  OMY:
+    name: "Omya Inc."
+    aliases:
+      - "Omya"
+    patterns:
+      - "Omya\\s+Inc\\.?"
+      - "OMY\\b"
+    domains:
+      - "omya.com"
+    contact_info:
+      primary_contact: "Bradford J. Searcy"
+      email: "bradford.searcy@omya.com"
+      phone: "(513) 430-4513"
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  P66:
+    name: "Phillips 66"
+    aliases:
+      - "Phillips 66 Company"
+    patterns:
+      - "Phillips\\s+66"
+      - "P66\\b"
+    domains: []
+    contact_info:
+      primary_contact: null
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  PET:
+    name: "Petglow"
+    aliases: []
+    patterns:
+      - "Petglow"
+      - "PET\\b"
+    domains:
+      - "celcius.us"
+    contact_info:
+      primary_contact: "Rakesh Katragadda"
+      email: "rakesh@celcius.us"
+      phone: "(734) 277-1266"
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  PLL:
+    name: "Precision Laboratories Ltd"
+    aliases:
+      - "Precision Labs"
+      - "Precision Laboratories"
+    patterns:
+      - "Precision\\s+Laboratories"
+      - "PLL\\b"
+    domains:
+      - "precisionlab.com"
+    contact_info:
+      primary_contact: null
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  PRO:
+    name: "Probelte S.A.U."
+    aliases:
+      - "Probelte"
+    patterns:
+      - "Probelte\\s+S\\.?A\\.?U\\.?"
+      - "PRO\\b"
+    domains:
+      - "probelte.com"
+    contact_info:
+      primary_contact: "José Asensi"
+      email: "andresantos@probelte.com"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  PVT:
+    name: "Pivot Bio, Inc."
+    aliases:
+      - "Pivot Bio"
+      - "Pivot"
+    patterns:
+      - "Pivot\\s+Bio"
+      - "PVT\\b"
+    domains:
+      - "pivotbio.com"
+    contact_info:
+      primary_contact: "Shade Sabitu"
+      email: "shade@pivotbio.com"
+      phone: "(410) 949-6418"
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  ROY:
+    name: "Royal Brinkman Canada"
+    aliases:
+      - "Royal Brinkman"
+      - "Brinkman Canada"
+    patterns:
+      - "Royal\\s+Brinkman"
+      - "ROY\\b"
+    domains:
+      - "royalbrinkman.ca"
+    contact_info:
+      primary_contact: "Julie Fordyce"
+      email: "julie.fordyce@royalbrinkman.ca"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  SAG:
+    name: "Solstice Agriculture, LLC"
+    aliases:
+      - "Solstice Ag"
+      - "Solstice Agriculture"
+    patterns:
+      - "Solstice\\s+Agriculture"
+      - "SAG\\b"
+    domains:
+      - "solsticeag.com"
+    contact_info:
+      primary_contact: "Patrick Kanzler"
+      email: "patrick@solsticeag.com"
+      phone: "(707) 599-9197"
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  SEI:
+    name: "SEIPASA, S.A."
+    aliases:
+      - "SEIPASA"
+    patterns:
+      - "SEIPASA"
+      - "SEI\\b"
+    domains:
+      - "seipasa.com"
+    contact_info:
+      primary_contact: "José Asensi"
+      email: "jasensi@seipasa.com"
+      phone: "+34 962 541 163"
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  SYM:
+    name: "Symborg Inc"
+    aliases:
+      - "Symborg"
+    patterns:
+      - "Symborg\\s+Inc\\.?"
+      - "SYM\\b"
+    domains:
+      - "symborg.com"
+    contact_info:
+      primary_contact: null
+      email: "consuelogarcia@bionativa.cl"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  TBP:
+    name: "ThinkBio PTY"
+    aliases:
+      - "ThinkBio"
+    patterns:
+      - "ThinkBio\\s+PTY"
+      - "TBP\\b"
+    domains: []
+    contact_info:
+      primary_contact: null
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  VLS:
+    name: "Verdesian Life Sciences US LLC"
+    aliases:
+      - "Verdesian"
+      - "Verdesian Life Sciences"
+    patterns:
+      - "Verdesian\\s+Life\\s+Sciences"
+      - "VLS\\b"
+    domains: []
+    contact_info:
+      primary_contact: "Miriam Frugis"
+      email: null
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+  ZZZ:
+    name: "Company Automation Tester"
+    aliases:
+      - "Test Company"
+      - "Automation Tester"
+    patterns:
+      - "Company\\s+Automation\\s+Tester"
+      - "ZZZ\\b"
+    domains:
+      - "delta-ac.com"
+    contact_info:
+      primary_contact: "TJ Tubia"
+      email: "tjtubia@delta-ac.com"
+      phone: null
+    metadata:
+      account_type: "manufacturer"
+      active_states: []
+      preferred_communication: "email"
+
+validation:
+  code_pattern: "^[A-Z]{3}$"
+  required_fields:
+    - "name"
+    - "aliases"
+    - "patterns"
+    - "domains"
+    - "contact_info"
+    - "metadata"
+  contact_info_required:
+    - "primary_contact"
+    - "email"
+  metadata_required:
+    - "account_type"
+    - "active_states"
+    - "preferred_communication"
+  allowed_account_types:
+    - "manufacturer"
+    - "distributor"
+    - "consultant"
+    - "laboratory"
+
+state_registration:
+  patterns:
+    CA: "^CA-\\d{4}-\\d{2}$"
+    FL: "^F-\\d{6}$"
+    NY: "^NY\\d{6}$"
+  required_fields:
+    - "state"
+    - "registration"
+    - "products"
+
+domain_validation:
+  required: true
+  allow_multiple: true
+  format: "^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\\.[a-zA-Z]{2,}$"

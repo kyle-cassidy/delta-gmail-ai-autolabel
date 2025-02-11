@@ -41,3 +41,35 @@ def test_classification_result_model():
             summary=None,
             flags=[]
         ) 
+
+def test_client_identification():
+    """Test client code identification in classification results."""
+    # Test valid client identification
+    valid_result = ClassificationResult(
+        document_type="registration",
+        client_code="EEA",  # Elemental Enzymes
+        confidence=0.95,
+        entities={
+            "companies": ["Elemental Enzymes Agriculture"],
+            "products": ["BioForce"],
+            "states": ["CA"]
+        },
+        key_fields={"dates": ["2024-02-11"]},
+        metadata={"classifier": "test"},
+        summary="EEA registration document",
+        flags=[]
+    )
+    assert valid_result.client_code == "EEA"
+    
+    # Test unknown client
+    unknown_client = ClassificationResult(
+        document_type="registration",
+        client_code=None,
+        confidence=0.8,
+        entities={"companies": ["Unknown Corp"]},
+        key_fields={},
+        metadata={"needs_review": True},
+        summary=None,
+        flags=["UNKNOWN_CLIENT"]
+    )
+    assert unknown_client.client_code is None 

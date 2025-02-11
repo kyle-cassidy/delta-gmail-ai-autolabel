@@ -12,6 +12,7 @@ from pydantic import BaseModel
 class ClassificationResult(BaseModel):
     """Standardized classification result model."""
     document_type: str | None
+    client_code: str | None
     confidence: float
     entities: Dict[str, List[str]]
     key_fields: Dict[str, List[str]]
