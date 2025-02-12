@@ -2,8 +2,10 @@
 
 import click
 import json
+import yaml
 import shutil
 import pathlib
+import re
 from typing import Dict, List, Optional
 from datetime import datetime
 from rich.console import Console
@@ -21,17 +23,6 @@ TO_LABEL_DIR = BASE_DIR / "_to_label"
 LABELED_DIR = BASE_DIR / "labeled_documents/documents"
 METADATA_FILE = BASE_DIR / "labeled_documents/metadata.json"
 
-# Valid values
-VALID_STATES = ["ME", "CA", "EP", "US", "IL", "AL"]
-VALID_BASE_TYPES = ["NEW", "RENEW", "TONNAGE", "CERT", "LABEL"]
-VALID_PRODUCT_CATEGORIES = [
-    "Commercial Fertilizers",
-    "Plant and Soil Amendments",
-    "Biostimulants",
-    "Liming Materials",
-    "Organic Input Materials"
-]
-
 class DocumentMetadata(BaseModel):
     """Pydantic model for document metadata."""
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -41,7 +32,7 @@ class DocumentMetadata(BaseModel):
     base_type: str = Field(..., description="Document base type")
     description: Optional[str] = Field(None, description="Optional description")
     product_categories: List[str] = Field(
-        default_factory=lambda: ["Commercial Fertilizers"],
+        default_factory=list,
         description="List of product categories"
     )
     expected_filename: str = Field(..., description="Expected standardized filename")
@@ -50,8 +41,8 @@ class DocumentMetadata(BaseModel):
     @field_validator("state")
     def validate_state(cls, v: str) -> str:
         v = v.upper()
-        if v not in VALID_STATES:
-            raise ValueError(f"Invalid state code. Must be one of: {', '.join(VALID_STATES)}")
+        if v not in get_valid_states():
+            raise ValueError(f"Invalid state code. Must be one of: {', '.join(get_valid_states())}")
         return v
     
     @field_validator("client_code")
@@ -61,22 +52,25 @@ class DocumentMetadata(BaseModel):
             raise ValueError("Client code must be exactly 3 letters")
         if not v.isalpha():
             raise ValueError("Client code must contain only letters")
+        if v not in get_valid_client_codes():
+            raise ValueError(f"Invalid client code. Must be one of: {', '.join(get_valid_client_codes())}")
         return v
     
     @field_validator("base_type")
     def validate_base_type(cls, v: str) -> str:
         v = v.upper()
-        if v not in VALID_BASE_TYPES:
-            raise ValueError(f"Invalid base type. Must be one of: {', '.join(VALID_BASE_TYPES)}")
+        if v not in get_valid_base_types():
+            raise ValueError(f"Invalid base type. Must be one of: {', '.join(get_valid_base_types())}")
         return v
     
     @field_validator("product_categories")
     def validate_product_categories(cls, v: List[str]) -> List[str]:
-        invalid_categories = [cat for cat in v if cat not in VALID_PRODUCT_CATEGORIES]
+        valid_categories = get_valid_product_categories()
+        invalid_categories = [cat for cat in v if cat not in valid_categories]
         if invalid_categories:
             raise ValueError(
                 f"Invalid product categories: {', '.join(invalid_categories)}. "
-                f"Must be one of: {', '.join(VALID_PRODUCT_CATEGORIES)}"
+                f"Must be one of: {', '.join(valid_categories)}"
             )
         return v
 
@@ -84,6 +78,59 @@ class MetadataStore(BaseModel):
     """Pydantic model for the metadata store."""
     documents: Dict[str, DocumentMetadata] = Field(default_factory=dict)
     last_updated: Optional[datetime] = None
+
+def load_yaml_config(filename: str) -> dict:
+    """Load a YAML configuration file."""
+    config_path = pathlib.Path("src/config") / filename
+    try:
+        with open(config_path) as f:
+            return yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        console.print(f"[yellow]Warning: Config file {filename} not found[/yellow]")
+        return {}
+
+def get_valid_states() -> List[str]:
+    """Get list of valid states from config."""
+    # For now, return a fixed list of states until we have proper state config
+    return sorted([
+        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+        "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+        "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+        "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+        "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+    ])
+
+def get_valid_client_codes() -> List[str]:
+    """Get list of valid client codes from config."""
+    config = load_yaml_config("clients.yaml")
+    return sorted(list(config.get("companies", {}).keys()))
+
+def get_valid_base_types() -> List[str]:
+    """Get list of valid base types from config."""
+    # For now, return a fixed list until we have proper base type config
+    return [
+        "NEW",      # New Registration
+        "RENEW",    # Renewal
+        "TONNAGE",  # Tonnage Report
+        "CERT",     # Certificate
+        "LABEL"     # Label Review
+    ]
+
+def get_valid_product_categories() -> List[str]:
+    """Get list of valid product categories from config."""
+    # For now, return a fixed list until we have proper category config
+    return sorted([
+        "Commercial Fertilizers",
+        "Plant and Soil Amendments",
+        "Biostimulants",
+        "Liming Materials",
+        "Organic Input Materials"
+    ])
+
+def get_client_info(client_code: str) -> dict:
+    """Get detailed information about a client."""
+    config = load_yaml_config("clients.yaml")
+    return config.get("companies", {}).get(client_code, {})
 
 def ensure_directories():
     """Ensure all required directories exist."""
@@ -106,28 +153,71 @@ def save_metadata(metadata: MetadataStore):
     with open(METADATA_FILE, "w") as f:
         json.dump(metadata.model_dump(mode='json'), f, indent=2)
 
+def get_client_choices() -> List[Choice]:
+    """Get formatted choices for client selection."""
+    clients = load_yaml_config("clients.yaml").get("companies", {})
+    choices = []
+    for code, info in sorted(clients.items()):
+        name = info.get("name", "")
+        choices.append(Choice(
+            title=f"{code}: {name}",
+            value=code
+        ))
+    return choices
+
+def get_base_type_choices() -> List[Choice]:
+    """Get formatted choices for base type selection."""
+    descriptions = {
+        "NEW": "New Registration",
+        "RENEW": "Renewal",
+        "TONNAGE": "Tonnage Report",
+        "CERT": "Certificate",
+        "LABEL": "Label Review"
+    }
+    return [
+        Choice(title=f"{code}: {desc}", value=code)
+        for code, desc in descriptions.items()
+    ]
+
+def get_product_category_choices() -> List[Choice]:
+    """Get formatted choices for product category selection."""
+    return [
+        Choice(title=category, value=category)
+        for category in get_valid_product_categories()
+    ]
+
 def prompt_for_metadata(existing_data: Optional[DocumentMetadata] = None) -> dict:
     """Interactive prompt for document metadata using questionary."""
     
     # State selection with autocomplete
+    valid_states = get_valid_states()
     state = questionary.autocomplete(
         "State code:",
-        choices=VALID_STATES,
+        choices=valid_states,
         default=existing_data.state if existing_data else "",
-        validate=lambda x: x.upper() in VALID_STATES
+        validate=lambda x: x.upper() in valid_states
     ).ask()
     
-    # Client code with validation
-    client_code = questionary.text(
-        "Client code (3 letters):",
-        default=existing_data.client_code if existing_data else "",
-        validate=lambda x: len(x) == 3 and x.isalpha()
+    # Client selection with search
+    client_code = questionary.select(
+        "Select client:",
+        choices=get_client_choices(),
+        default=existing_data.client_code if existing_data else None
     ).ask()
     
-    # Base type selection
+    # Show client info
+    client_info = get_client_info(client_code)
+    if client_info:
+        console.print("\n[bold]Client Information:[/bold]")
+        console.print(f"Name: {client_info.get('name', '')}")
+        console.print(f"Contact: {client_info.get('contact_info', {}).get('primary_contact', '')}")
+        console.print(f"Email: {client_info.get('contact_info', {}).get('email', '')}")
+        console.print(f"Active States: {', '.join(client_info.get('metadata', {}).get('active_states', []))}\n")
+    
+    # Base type selection with descriptions
     base_type = questionary.select(
-        "Base type:",
-        choices=VALID_BASE_TYPES,
+        "Select base type:",
+        choices=get_base_type_choices(),
         default=existing_data.base_type if existing_data else "NEW"
     ).ask()
     
@@ -138,11 +228,18 @@ def prompt_for_metadata(existing_data: Optional[DocumentMetadata] = None) -> dic
     ).ask()
     
     # Product categories with checkboxes
+    category_choices = get_product_category_choices()
+    
+    # Set default categories
+    if existing_data and existing_data.product_categories:
+        default_categories = existing_data.product_categories
+    else:
+        default_categories = [category_choices[0].value] if category_choices else []
+        
     product_categories = questionary.checkbox(
         "Select product categories:",
-        choices=VALID_PRODUCT_CATEGORIES,
-        default=[cat for cat in VALID_PRODUCT_CATEGORIES 
-                if existing_data and cat in existing_data.product_categories]
+        choices=category_choices,
+        default=default_categories
     ).ask()
     
     return {
