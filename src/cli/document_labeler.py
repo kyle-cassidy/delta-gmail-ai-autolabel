@@ -21,7 +21,8 @@ from rich.table import Table
 from rich.progress import track
 import questionary
 from questionary import Choice
-import builtins  # Add this at the top with other imports
+from prompt_toolkit.styles import Style
+import builtins
 
 console = Console()
 
@@ -32,8 +33,67 @@ LABELED_DIR = BASE_DIR / "labeled_documents/documents"
 METADATA_FILE = BASE_DIR / "labeled_documents/metadata.json"
 
 
+# Catppuccin Mocha palette
+MOCHA = {
+    "rosewater": "#f5e0dc",
+    "flamingo": "#f2cdcd",
+    "pink": "#f5c2e7",
+    "mauve": "#cba6f7",
+    "red": "#f38ba8",
+    "maroon": "#eba0ac",
+    "peach": "#fab387",
+    "yellow": "#f9e2af",
+    "green": "#a6e3a1",
+    "teal": "#94e2d5",
+    "sky": "#89dceb",
+    "sapphire": "#74c7ec",
+    "blue": "#89b4fa",
+    "lavender": "#b4befe",
+    "text": "#cdd6f4",
+    "subtext1": "#bac2de",
+    "subtext0": "#a6adc8",
+    "overlay2": "#9399b2",
+    "overlay1": "#7f849c",
+    "overlay0": "#6c7086",
+    "surface2": "#585b70",
+    "surface1": "#45475a",
+    "surface0": "#313244",
+    "base": "#1e1e2e",
+    "mantle": "#181825",
+    "crust": "#11111b",
+}
+
+PROMPT_STYLE = Style.from_dict(
+    {
+        # Base components
+        "qmark": f'{MOCHA["mauve"]} bold',  # Question mark
+        "question": f'{MOCHA["lavender"]} bold',  # Question text
+        "answer": f'bold {MOCHA["green"]}',  # Selected answer appearance
+        "pointer": f'bold {MOCHA["peach"]}',  # Make the pointer (arrow) more visible
+        "highlighted": "",  # Better contrast for highlighted item
+        "selected": "",  # More subtle highlight for selected item
+        "separator": MOCHA["overlay0"],  # Separator in lists
+        "instruction": MOCHA["overlay1"],  # Instructions/help text
+        # Input components
+        "text": MOCHA["text"],  # Regular text
+        "input": f'{MOCHA["text"]} bold',  # User input text
+        # Choice components
+        "choice": MOCHA["text"],  # Normal choice appearance
+        "choice-selected": f'{MOCHA["text"]}',  # Selected choice appearance
+        # Default validators
+        "valid": MOCHA["green"],  # Valid input
+        "invalid": MOCHA["red"],  # Invalid input
+        # Completion components
+        "completion-menu": f'bg:{MOCHA["surface0"]}',
+        "completion-item": MOCHA["text"],
+        "completion-item selected": f'bg:{MOCHA["surface1"]} {MOCHA["text"]}',
+    }
+)
+
+
 class DocumentMetadata:
     """Holds metadata for a document and validates its fields."""
+
     def __init__(
         self,
         state: str,
@@ -42,7 +102,7 @@ class DocumentMetadata:
         expected_filename: str,
         description: Optional[str] = None,
         product_categories: Optional[List[str]] = None,
-        last_updated: Optional[datetime] = None
+        last_updated: Optional[datetime] = None,
     ):
         self.state = validate_state(state)
         self.client_code = validate_client_code(client_code)
@@ -58,6 +118,7 @@ class DocumentMetadata:
 
 class MetadataStore:
     """Stores all document metadata."""
+
     def __init__(self):
         self.documents: Dict[str, DocumentMetadata] = {}
         self.last_updated: Optional[datetime] = None
@@ -76,13 +137,60 @@ def load_yaml_config(filename: str) -> dict:
 
 def get_valid_states() -> List[str]:
     """Return a sorted list of valid state codes."""
-    return sorted([
-        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-        "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-        "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-        "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-        "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
-    ])
+    return sorted(
+        [
+            "AL",
+            "AK",
+            "AZ",
+            "AR",
+            "CA",
+            "CO",
+            "CT",
+            "DE",
+            "FL",
+            "GA",
+            "HI",
+            "ID",
+            "IL",
+            "IN",
+            "IA",
+            "KS",
+            "KY",
+            "LA",
+            "ME",
+            "MD",
+            "MA",
+            "MI",
+            "MN",
+            "MS",
+            "MO",
+            "MT",
+            "NE",
+            "NV",
+            "NH",
+            "NJ",
+            "NM",
+            "NY",
+            "NC",
+            "ND",
+            "OH",
+            "OK",
+            "OR",
+            "PA",
+            "RI",
+            "SC",
+            "SD",
+            "TN",
+            "TX",
+            "UT",
+            "VT",
+            "VA",
+            "WA",
+            "WV",
+            "WI",
+            "WY",
+        ]
+    )
 
 
 def get_client_choices_dict() -> Dict[str, str]:
@@ -128,7 +236,7 @@ def get_client_choices_dict() -> Dict[str, str]:
         "SYM": "Symborg Inc",
         "TBP": "ThinkBio PTY",
         "VLS": "Verdesian Life Sciences US LLC",
-        "ZZZ": "Company Automation Tester"
+        "ZZZ": "Company Automation Tester",
     }
 
 
@@ -139,14 +247,12 @@ def get_base_type_choices() -> List[Choice]:
         "RENEW": "Renewal",
         "TONNAGE": "Tonnage Report",
         "CERT": "Certificate",
-        "LABEL": "Label Review"
+        "LABEL": "Label Review",
     }
-    return [Choice(title=f"{code}: {desc}", value=code) for code, desc in descriptions.items()]
-
-
-def get_product_category_choices() -> List[Choice]:
-    """Return formatted choices for product category selection."""
-    return [Choice(title=category, value=category) for category in get_valid_product_categories()]
+    return [
+        Choice(title=f"{code}: {desc}", value=code)
+        for code, desc in descriptions.items()
+    ]
 
 
 def get_client_info(client_code: str) -> dict:
@@ -157,11 +263,9 @@ def get_client_info(client_code: str) -> dict:
             "name": "Arborjet, Inc.",
             "contact_info": {
                 "primary_contact": "Nicholas Millen",
-                "email": "nmillen@arborjet.com"
+                "email": "nmillen@arborjet.com",
             },
-            "metadata": {
-                "active_states": ["MA"]
-            }
+            "metadata": {"active_states": ["MA"]},
         }
         # Add other clients as needed
     }
@@ -170,13 +274,51 @@ def get_client_info(client_code: str) -> dict:
 
 def get_valid_client_codes() -> List[str]:
     """Return a sorted list of valid client codes."""
-    return sorted([
-        "AAS", "AGR", "AND", "AQB", "AQT", "ARB", "BIN", "BIO", "BOR", "BPT",
-        "CLI", "COM", "COR", "DED", "DEL", "ECO", "EEA", "GRN", "GWB", "HIC",
-        "IBA", "KIT", "KOC", "LAM", "LOC", "MAN", "NLS", "OMC", "OMY", "P66",
-        "PET", "PLL", "PRO", "PVT", "ROY", "SAG", "SEI", "SYM", "TBP", "VLS",
-        "ZZZ"
-    ])
+    return sorted(
+        [
+            "AAS",
+            "AGR",
+            "AND",
+            "AQB",
+            "AQT",
+            "ARB",
+            "BIN",
+            "BIO",
+            "BOR",
+            "BPT",
+            "CLI",
+            "COM",
+            "COR",
+            "DED",
+            "DEL",
+            "ECO",
+            "EEA",
+            "GRN",
+            "GWB",
+            "HIC",
+            "IBA",
+            "KIT",
+            "KOC",
+            "LAM",
+            "LOC",
+            "MAN",
+            "NLS",
+            "OMC",
+            "OMY",
+            "P66",
+            "PET",
+            "PLL",
+            "PRO",
+            "PVT",
+            "ROY",
+            "SAG",
+            "SEI",
+            "SYM",
+            "TBP",
+            "VLS",
+            "ZZZ",
+        ]
+    )
 
 
 def get_valid_base_types() -> List[str]:
@@ -186,13 +328,23 @@ def get_valid_base_types() -> List[str]:
 
 def get_valid_product_categories() -> List[str]:
     """Return a sorted list of valid product categories."""
-    return sorted([
-        "Biostimulants",
-        "Commercial Fertilizers",
-        "Plant and Soil Amendments",
-        "Liming Materials",
-        "Organic Input Materials"
-    ])
+    return sorted(
+        [
+            "Biostimulants",
+            "Commercial Fertilizers",
+            "Plant and Soil Amendments",
+            "Liming Materials",
+            "Organic Input Materials",
+        ]
+    )
+
+
+def get_product_category_choices() -> List[Choice]:
+    """Return formatted choices for product category selection."""
+    return [
+        Choice(title=category, value=category)
+        for category in get_valid_product_categories()
+    ]
 
 
 def ensure_directories() -> None:
@@ -206,7 +358,9 @@ def validate_state(state: str) -> str:
     """Validate and format a state code."""
     state = state.upper().strip()
     if state not in get_valid_states():
-        raise ValueError(f"Invalid state code. Must be one of: {', '.join(get_valid_states())}")
+        raise ValueError(
+            f"Invalid state code. Must be one of: {', '.join(get_valid_states())}"
+        )
     return state
 
 
@@ -216,7 +370,9 @@ def validate_client_code(code: str) -> str:
     if len(code) != 3 or not code.isalpha():
         raise ValueError("Client code must be exactly 3 alphabetic letters")
     if code not in get_valid_client_codes():
-        raise ValueError(f"Invalid client code. Must be one of: {', '.join(get_valid_client_codes())}")
+        raise ValueError(
+            f"Invalid client code. Must be one of: {', '.join(get_valid_client_codes())}"
+        )
     return code
 
 
@@ -224,7 +380,9 @@ def validate_base_type(base_type: str) -> str:
     """Validate and format a base type."""
     base_type = base_type.upper().strip()
     if base_type not in get_valid_base_types():
-        raise ValueError(f"Invalid base type. Must be one of: {', '.join(get_valid_base_types())}")
+        raise ValueError(
+            f"Invalid base type. Must be one of: {', '.join(get_valid_base_types())}"
+        )
     return base_type
 
 
@@ -270,7 +428,7 @@ def load_metadata() -> MetadataStore:
                     description=meta.get("description"),
                     product_categories=meta.get("product_categories", []),
                     expected_filename=meta["expected_filename"],
-                    last_updated=doc_last_updated
+                    last_updated=doc_last_updated,
                 )
             except (KeyError, ValueError) as e:
                 console.print(f"[red]Invalid metadata entry {filename}: {e}[/red]")
@@ -291,9 +449,10 @@ def save_metadata(metadata: MetadataStore) -> None:
                 "description": doc.description,
                 "product_categories": doc.product_categories,
                 "expected_filename": doc.expected_filename,
-                "last_updated": doc.last_updated.isoformat()
-            } for filename, doc in metadata.documents.items()
-        }
+                "last_updated": doc.last_updated.isoformat(),
+            }
+            for filename, doc in metadata.documents.items()
+        },
     }
     with open(METADATA_FILE, "w") as f:
         json.dump(serialized, f, indent=2)
@@ -301,92 +460,162 @@ def save_metadata(metadata: MetadataStore) -> None:
 
 def prompt_for_metadata(existing_data: Optional[DocumentMetadata] = None) -> dict:
     """Interactively prompt the user for document metadata."""
+    console.print(
+        f"\n[bold {MOCHA['lavender']}]📄 Document Metadata Entry[/bold {MOCHA['lavender']}]"
+    )
+    console.print(
+        f"┌─ [bold {MOCHA['overlay1']}]Step 1 of 4:[/bold {MOCHA['overlay1']}] Basic Information\n"
+    )
+
+    # Get state code
     valid_states = get_valid_states()
     state = questionary.autocomplete(
         "State code:",
         choices=valid_states,
-        default=existing_data.state if existing_data else "",
-        validate=lambda x: x.upper() in valid_states
+        default=existing_data.state if existing_data is not None else "",
+        validate=lambda x: x.upper() in valid_states,
+        style=PROMPT_STYLE,
     ).ask()
 
-    # Change to autocomplete for client selection
-    valid_clients = [f"{code}: {name}" for code, name in sorted(get_client_choices_dict().items())]
+    console.print()  # Add vertical spacing
+
+    # Get client code with company name
+    valid_clients = [
+        f"{code}: {name}" for code, name in sorted(get_client_choices_dict().items())
+    ]
     client_response = questionary.autocomplete(
         "Client code:",
         choices=valid_clients,
-        default=f"{existing_data.client_code}" if existing_data else "",
-        validate=lambda x: x.split(":")[0].strip().upper() in get_valid_client_codes()
+        default=(f"{existing_data.client_code}" if existing_data is not None else ""),
+        validate=lambda x: x.split(":")[0].strip().upper() in get_valid_client_codes(),
+        style=PROMPT_STYLE,
     ).ask()
     client_code = client_response.split(":")[0].strip()
 
+    # Display client information if available
     client_info = get_client_info(client_code)
     if client_info:
-        console.print("\n[bold]Client Information:[/bold]")
-        console.print(f"Name: {client_info.get('name', '')}")
-        console.print(f"Contact: {client_info.get('contact_info', {}).get('primary_contact', '')}")
-        console.print(f"Email: {client_info.get('contact_info', {}).get('email', '')}")
-        console.print(f"Active States: {', '.join(client_info.get('metadata', {}).get('active_states', []))}\n")
+        console.print(
+            f"\n[bold {MOCHA['overlay1']}]Client Information:[/bold {MOCHA['overlay1']}]"
+        )
+        console.print(
+            f"[{MOCHA['text']}]Name:[/{MOCHA['text']}] [{MOCHA['green']}]{client_info.get('name', '')}[/{MOCHA['green']}]"
+        )
+        console.print(
+            f"[{MOCHA['text']}]Contact:[/{MOCHA['text']}] [{MOCHA['green']}]{client_info.get('contact_info', {}).get('primary_contact', '')}[/{MOCHA['green']}]"
+        )
+        console.print(
+            f"[{MOCHA['text']}]Email:[/{MOCHA['text']}] [{MOCHA['green']}]{client_info.get('contact_info', {}).get('email', '')}[/{MOCHA['green']}]"
+        )
+        console.print(
+            f"[{MOCHA['text']}]Active States:[/{MOCHA['text']}] [{MOCHA['green']}]{', '.join(client_info.get('metadata', {}).get('active_states', []))}[/{MOCHA['green']}]\n"
+        )
 
-    base_type = questionary.select(
+    # Base type selection using checkbox
+    console.print(
+        f"\n┌─ [bold {MOCHA['overlay1']}]Step 2 of 4:[/bold {MOCHA['overlay1']}] Document Type\n"
+    )
+
+    valid_base_types = get_valid_base_types()
+    base_type_choices = get_base_type_choices()
+    default_base_type = []
+    if existing_data is not None and existing_data.base_type:
+        if existing_data.base_type in valid_base_types:
+            default_base_type = [existing_data.base_type]
+
+    ### Base type using checkbox - restricting to single selection in post-processing
+    selected_base_types = questionary.checkbox(
         "Select base type:",
-        choices=get_base_type_choices(),
-        default=existing_data.base_type if existing_data else "NEW"
+        choices=base_type_choices,
+        default=default_base_type if default_base_type else None,
+        style=PROMPT_STYLE,
     ).ask()
 
+    # Process selection to ensure only one type is selected
+    base_type = None
+    if selected_base_types and isinstance(selected_base_types, list):
+        selected_base_types = [
+            type_
+            for type_ in selected_base_types
+            if isinstance(type_, str) and type_ in valid_base_types
+        ]
+        if selected_base_types:
+            base_type = selected_base_types[0]  # Take the first selected type
+
+    # If no valid selection was made, default to NEW
+    if not base_type:
+        base_type = "NEW"
+    # Get description
+    console.print(
+        f"\n┌─ [bold {MOCHA['overlay1']}]Step 3 of 4:[/bold {MOCHA['overlay1']}] Description\n"
+    )
+
+    ## Description
     description = questionary.text(
         "Description (optional, use-hyphens-for-spaces):",
-        default=existing_data.description if existing_data else ""
+        default=existing_data.description if existing_data is not None else "",
+        style=PROMPT_STYLE,
     ).ask()
+
     if description:
         description = description.lower()
         description = re.sub(r"\s+", "-", description)
         description = re.sub(r"[^\w-]", "", description)
 
+    # Get product categories
+    console.print(
+        f"\n┌─ [bold {MOCHA['overlay1']}]Step 4 of 4:[/bold {MOCHA['overlay1']}] Categories\n"
+    )
+
     valid_categories = get_valid_product_categories()
     category_choices = get_product_category_choices()
-    default_categories = [
-        cat for cat in (existing_data.product_categories if existing_data else [])
-        if cat in valid_categories
-    ]
-    
-    # Use checkbox but add a "Done" choice
+    default_categories = []
+    if existing_data is not None and existing_data.product_categories:
+        default_categories = [
+            cat for cat in existing_data.product_categories if cat in valid_categories
+        ]
+
+    # Get product categories using checkbox
     product_categories = questionary.checkbox(
         "Select product categories (optional):",
         choices=category_choices + [Choice(title="[Done]", value="__DONE__")],
-        default=default_categories if default_categories else None
+        default=default_categories if default_categories else None,
+        style=PROMPT_STYLE,
     ).ask()
 
-    # Robust product categories sanitization
-    if (product_categories is None or 
-        not hasattr(product_categories, '__iter__') or 
-        not isinstance(product_categories, builtins.list)):
+    # Sanitize product categories
+    if not product_categories or not isinstance(product_categories, list):
         product_categories = []
     else:
-        # Convert to list if it's some other iterable
-        product_categories = builtins.list(product_categories)
-        # Filter out non-string, None, or invalid categories and the Done marker
         product_categories = [
-            cat for cat in product_categories 
+            cat
+            for cat in product_categories
             if isinstance(cat, str) and cat in valid_categories and cat != "__DONE__"
         ]
+
+    console.print(
+        f"\n[bold {MOCHA['green']}]✓ Metadata collection complete![/bold {MOCHA['green']}]\n"
+    )
 
     return {
         "state": state.upper(),
         "client_code": client_code.upper(),
         "base_type": base_type.upper(),
         "description": description or None,
-        "product_categories": product_categories
+        "product_categories": product_categories,
     }
 
 
 def generate_filename(meta_data: dict) -> str:
     """
     Generate a standardized filename from the metadata dictionary.
-    
+
     The filename is constructed in the following format:
       STATE-CLIENT-BASETYPE[-description].pdf
     """
-    filename = f"{meta_data['state']}-{meta_data['client_code']}-{meta_data['base_type']}"
+    filename = (
+        f"{meta_data['state']}-{meta_data['client_code']}-{meta_data['base_type']}"
+    )
     if meta_data.get("description"):
         filename += f"-{meta_data['description']}"
     return filename + ".pdf"
@@ -400,9 +629,7 @@ def cli():
 
 @cli.command()
 @click.argument(
-    'document_path',
-    nargs=-1,
-    type=click.Path(exists=True, path_type=pathlib.Path)
+    "document_path", nargs=-1, type=click.Path(exists=True, path_type=pathlib.Path)
 )
 def label(document_path):
     """
@@ -421,7 +648,9 @@ def label(document_path):
             process_single_document(doc_path, metadata, batch_mode=True)
 
 
-def process_single_document(doc_path: pathlib.Path, metadata: MetadataStore, batch_mode: bool = False) -> None:
+def process_single_document(
+    doc_path: pathlib.Path, metadata: MetadataStore, batch_mode: bool = False
+) -> None:
     """Process a single document: prompt for metadata, generate a new filename, and update metadata."""
     console.print(f"\n[bold blue]Labeling document:[/bold blue] {doc_path.name}")
     is_external = TO_LABEL_DIR not in doc_path.parents
@@ -439,7 +668,9 @@ def process_single_document(doc_path: pathlib.Path, metadata: MetadataStore, bat
         handle_labeling_error(e, doc_path, metadata, batch_mode)
 
 
-def handle_file_move(src_path: pathlib.Path, new_filename: str, is_external: bool) -> None:
+def handle_file_move(
+    src_path: pathlib.Path, new_filename: str, is_external: bool
+) -> None:
     """Move or copy the file to the labeled directory."""
     target_path = LABELED_DIR / new_filename
     try:
@@ -447,22 +678,31 @@ def handle_file_move(src_path: pathlib.Path, new_filename: str, is_external: boo
             shutil.copy2(str(src_path), str(target_path))
         else:
             shutil.move(str(src_path), str(target_path))
-        console.print(f"[green]{'Copied' if is_external else 'Moved'} document to:[/green] {target_path}")
+        console.print(
+            f"[green]{'Copied' if is_external else 'Moved'} document to:[/green] {target_path}"
+        )
     except Exception as e:
         console.print(f"[red]Error moving file:[/red] {e}")
         raise
 
 
-def update_metadata(metadata: MetadataStore, filename: str, entry: DocumentMetadata) -> None:
+def update_metadata(
+    metadata: MetadataStore, filename: str, entry: DocumentMetadata
+) -> None:
     """Update the metadata store and save changes."""
     metadata.documents[filename] = entry
     save_metadata(metadata)
 
 
-def handle_labeling_error(error: Exception, doc_path: pathlib.Path, metadata: MetadataStore, batch_mode: bool) -> None:
+def handle_labeling_error(
+    error: Exception, doc_path: pathlib.Path, metadata: MetadataStore, batch_mode: bool
+) -> None:
     """Display the error and, if appropriate, allow the user to retry labeling."""
     console.print(f"[red]Validation error:[/red] {error}")
-    if not batch_mode and questionary.confirm("Would you like to try again?", default=True).ask():
+    if (
+        not batch_mode
+        and questionary.confirm("Would you like to try again?", default=True).ask()
+    ):
         process_single_document(doc_path, metadata)
 
 
@@ -487,7 +727,11 @@ def list():
             doc_data.state,
             doc_data.base_type,
             doc_data.client_code,
-            ", ".join(doc_data.product_categories) if doc_data.product_categories else "None"
+            (
+                ", ".join(doc_data.product_categories)
+                if doc_data.product_categories
+                else "None"
+            ),
         )
     console.print(table)
 
@@ -508,5 +752,5 @@ def status():
             console.print(f"- {doc.name}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

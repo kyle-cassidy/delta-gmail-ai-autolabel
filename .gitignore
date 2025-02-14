@@ -82,6 +82,16 @@ notebooks/*
 vertex-ai-samples/
 
 .cursorrules
-# /context/**
-# /src/config/**
-# tests/fixtures/documents/**
+/context/**
+/src/config/**
+tests/fixtures/documents/**
+docs/4-schemas/**
+
+# Documentation
+/docs/
+/docs/**
+
+# Additional directories to ignore
+/context/**
+/src/config/**
+tests/fixtures/documents/**
