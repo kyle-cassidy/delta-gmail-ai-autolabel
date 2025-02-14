@@ -7,8 +7,8 @@ PyPDF2>=3.0.0
 
 # Classifier dependencies
 google-generativeai>=0.3.2
-docling>=1.0.0
-torch>=2.0.0  # Required for Docling
+torch>=2.0.0  # Required for document processing
+pdfminer.six>=20221105  # Required for PDF text extraction
 
 # Gmail API dependencies
 google-api-python-client>=2.0.0
@@ -25,7 +25,7 @@ isort>=5.12.0
 flake8>=6.1.0
 mypy>=1.7.0
 click>=8.1.0  # Required for CLI tools
-rich>=10.0.0  # Required for CLI UI
+rich>=13.9.4  # Required for CLI UI
 questionary>=2.0.0  # Required for interactive prompts
 pydantic>=2.0.0
 

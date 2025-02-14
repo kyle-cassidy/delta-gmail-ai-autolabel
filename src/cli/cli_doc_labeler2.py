@@ -461,43 +461,40 @@ class PromptHandler:
     @staticmethod
     def _suggest_metadata(text: str, domain_config: DomainConfig) -> Dict[str, Any]:
         """Suggests metadata based on document content."""
-        suggestions = {}
+        suggestions: Dict[str, Any] = {}
 
-        # Clean and normalize text
-        cleaned_text = " ".join(text.split())  # Normalize whitespace
+        # Suggest document type
+        doc_type, base_type = domain_config.get_document_type(text)
+        if doc_type and base_type:  # Only add if both are not None
+            suggestions["document_type"] = doc_type
+            suggestions["base_type"] = base_type
+            suggestions["document_type_context"] = extract_context(
+                text, [doc_type]
+            )  # Extract context
 
-        # Get state matches with confidence scores
-        state_matches = []
-        for state_code, pattern in domain_config.patterns["states"].items():
-            matches = list(pattern.finditer(cleaned_text))
-            if matches:
-                # Calculate confidence based on match type and position
-                for match in matches:
-                    matched_text = match.group(0)
-                    confidence = 0.7  # Base confidence
+        # Suggest product categories
+        product_categories = domain_config.get_product_categories(text)
+        if product_categories:
+            suggestions["product_categories"] = product_categories
+            suggestions["product_categories_context"] = extract_context(
+                text, product_categories
+            )
 
-                    # Boost confidence for full state name matches
-                    state_info = domain_config.state_patterns["states"].get(
-                        state_code, {}
-                    )
-                    if state_info.get("name", "").lower() in matched_text.lower():
-                        confidence = 0.9
+        # Suggest company (client)
+        company_matches = domain_config.get_company_codes(text)
+        if company_matches:
+            #  return the first match for now. could improve logic
+            suggestions["client_code"] = company_matches[0][0]
+            suggestions["client_code_context"] = extract_context(
+                text, [company_matches[0][1]]
+            )  # Use the *matched name*
 
-                    state_matches.append((state_code, confidence, match))
-
-        # Use the highest confidence state match
-        if state_matches:
-            state_matches.sort(key=lambda x: (x[1], -x[2].start()), reverse=True)
-            state_code, confidence, match = state_matches[0]
-
-            # Get context around the match
-            start = max(0, match.start() - 30)
-            end = min(len(cleaned_text), match.end() + 30)
-            context = cleaned_text[start:end].strip()
-
-            suggestions["state"] = state_code
-            suggestions["state_context"] = context
-            suggestions["state_confidence"] = confidence
+        # suggest states
+        states = domain_config.get_states(text)
+        if states:
+            # return the first match for now. could improve logic
+            suggestions["state"] = states[0]
+            suggestions["state_context"] = extract_context(text, [states[0]])
 
         return suggestions
 
@@ -661,7 +658,7 @@ class PromptHandler:
         if "product_categories" in suggestions:
             selected_categories = suggestions["product_categories"]
             console.print(
-                f"  [bold {MOCHA['yellow']}]�� Suggestion: {', '.join(suggestions['product_categories'])} "
+                f"  [bold {MOCHA['yellow']}]💡 Suggestion: {', '.join(suggestions['product_categories'])} "
                 f"({suggestions['product_categories_context']})[/bold {MOCHA['yellow']}]"
             )
 
@@ -955,4 +952,4 @@ if __name__ == "__main__":
     #
     #     OR, to process a specific file:
     #
-    #     python -m src.cli.document_labeler label /Users/kielay/Delta-Local/2-active-projects/delta-gmail-ai-autolabel/tests/fixtures/documents/_to_label/1234.pdf
+    #     python -m src.cli.cli_doc_labeler2 label /Users/kielay/Delta-Local/2-active-projects/delta-gmail-ai-autolabel/tests/fixtures/documents/_to_label/1234.pdf

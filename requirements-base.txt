@@ -17,6 +17,5 @@ matplotlib>=3.8.0
 google-generativeai==0.3.2
 python-multipart==0.0.9
 
-# Add Docling and its dependencies
-docling>=1.0.0  # Note: Update version as needed
-torch>=2.0.0    # Required for Docling's ML components
+# ML dependencies
+torch>=2.0.0    # Required for document processing

@@ -7,7 +7,7 @@ import yaml
 import shutil
 import pathlib
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any, Collection, NoReturn
 from datetime import datetime
 from rich.console import Console
 from rich.table import Table
@@ -16,6 +16,14 @@ import questionary
 from questionary import Choice
 from prompt_toolkit.styles import Style
 import builtins  # Import builtins
+from pdfminer.high_level import extract_text  # Import from pdfminer.six package
+from rich.panel import Panel
+
+# Use relative imports
+from ..utils.text_utils import highlight_matches, extract_context
+from ..classifiers.domain_config import DomainConfig
+from ..classifiers.docling import DoclingClassifier
+from ..utils.file_handler import FileHandler
 
 # --- Constants and Configuration ---
 console = Console()
@@ -380,67 +388,147 @@ class MetadataStore:
         return self.documents.get(filename)
 
 
-class FileHandler:
-    """Handles file operations."""
-
-    @staticmethod
-    def move_or_copy(
-        src_path: pathlib.Path,
-        target_dir: pathlib.Path,
-        new_filename: str,
-        is_external: bool,
-    ) -> None:
-        """Move or copy a file to the target directory."""
-        target_path = target_dir / new_filename
-        try:
-            if is_external:
-                shutil.copy2(str(src_path), str(target_path))
-                console.print(f"[green]Copied document to:[/green] {target_path}")
-            else:
-                shutil.move(str(src_path), str(target_path))
-                console.print(f"[green]Moved document to:[/green] {target_path}")
-        except (
-            shutil.Error,
-            OSError,
-            PermissionError,
-        ) as e:  # Catch specific file errors
-            console.print(f"[red]Error moving/copying file:[/red] {e}")
-            raise
-
-    @staticmethod
-    def generate_filename(meta_data: DocumentMetadata) -> str:
-        """Generate a standardized filename."""
-        filename = f"{meta_data.state}-{meta_data.client_code}-{meta_data.base_type}"
-        if meta_data.description:
-            filename += f"-{meta_data.description}"
-        return filename + ".pdf"
-
-
 class PromptHandler:
     """Handles user interaction for gathering metadata."""
 
     @staticmethod
+    def display_client_info(client_code: str) -> None:
+        """Displays client information if available."""
+        client_info: Dict[str, Any] = Config.CLIENT_INFO.get(client_code, {})
+        if client_info:
+            console.print(
+                f"\n[bold {MOCHA['overlay1']}]Client Information:[/bold {MOCHA['overlay1']}]"
+            )
+            console.print(
+                f"[{MOCHA['text']}]Name:[/{MOCHA['text']}] [{MOCHA['green']}]{client_info.get('name', '')}[/{MOCHA['green']}]"
+            )
+            contact_info: Dict[str, Any] = client_info.get("contact_info", {})
+            console.print(
+                f"[{MOCHA['text']}]Contact:[/{MOCHA['text']}] [{MOCHA['green']}]{contact_info.get('primary_contact', '')}[/{MOCHA['green']}]"
+            )
+            console.print(
+                f"[{MOCHA['text']}]Email:[/{MOCHA['text']}] [{MOCHA['green']}]{contact_info.get('email', '')}[/{MOCHA['green']}]\n"
+            )
+            metadata: Dict[str, Any] = client_info.get("metadata", {})
+            console.print(
+                f"[{MOCHA['text']}]Active States:[/{MOCHA['text']}] [{MOCHA['green']}]{', '.join(metadata.get('active_states', []))}[/{MOCHA['green']}]\n"
+            )
+
+    @staticmethod
+    def _suggest_metadata(text: str, domain_config: DomainConfig) -> Dict[str, Any]:
+        """Suggests metadata based on document content."""
+        suggestions = {}
+
+        # Clean and normalize text
+        cleaned_text = " ".join(text.split())  # Normalize whitespace
+
+        # Get state matches with confidence scores
+        state_matches = []
+        for state_code, pattern in domain_config.patterns["states"].items():
+            matches = list(pattern.finditer(cleaned_text))
+            if matches:
+                # Calculate confidence based on match type and position
+                for match in matches:
+                    matched_text = match.group(0)
+                    confidence = 0.7  # Base confidence
+
+                    # Boost confidence for full state name matches
+                    state_info = domain_config.state_patterns["states"].get(
+                        state_code, {}
+                    )
+                    if state_info.get("name", "").lower() in matched_text.lower():
+                        confidence = 0.9
+
+                    state_matches.append((state_code, confidence, match))
+
+        # Use the highest confidence state match
+        if state_matches:
+            state_matches.sort(key=lambda x: (x[1], -x[2].start()), reverse=True)
+            state_code, confidence, match = state_matches[0]
+
+            # Get context around the match
+            start = max(0, match.start() - 30)
+            end = min(len(cleaned_text), match.end() + 30)
+            context = cleaned_text[start:end].strip()
+
+            suggestions["state"] = state_code
+            suggestions["state_context"] = context
+            suggestions["state_confidence"] = confidence
+
+        return suggestions
+
+    @staticmethod
     def prompt_for_metadata(
         existing_data: Optional[DocumentMetadata] = None,
+        doc_path: Optional[pathlib.Path] = None,
     ) -> DocumentMetadata:
-        """Prompt the user for document metadata, using existing data as defaults."""
-
+        """Prompt for document metadata with document preview."""
         console.print(
             f"\n[bold {MOCHA['lavender']}]📄 Document Metadata Entry[/bold {MOCHA['lavender']}]"
         )
 
-        # State
+        # Load the domain config for suggestions
+        domain_config = DomainConfig(pathlib.Path("src/config"))
+
+        # Extract text early but don't show preview yet
+        pdf_text = ""
+        if doc_path and doc_path.exists():
+            try:
+                pdf_text = FileHandler.extract_text_from_pdf(doc_path)
+                console.print(f"\nDebug: Found {len(pdf_text)} characters in PDF")
+            except Exception as e:
+                console.print(
+                    f"[red]Warning: Could not extract text from PDF: {e}[/red]"
+                )
+
+        # Get suggestions
+        suggestions = PromptHandler._suggest_metadata(pdf_text, domain_config)
+        console.print(f"\nDebug: Got suggestions: {suggestions}")
+
+        # Show document preview before metadata collection
+        if pdf_text:
+            console.print(
+                f"\n[bold {MOCHA['overlay1']}]Document Preview:[/bold {MOCHA['overlay1']}]"
+            )
+            console.print("─" * 50)
+
+            # Show full document content with proper word wrap
+            lines = [line.strip() for line in pdf_text.split("\n") if line.strip()]
+            formatted_text = "\n".join(lines)
+
+            console.print(
+                Panel(
+                    formatted_text,
+                    title="Document Content",
+                    width=100,
+                    padding=(1, 2),
+                    style=f"bold {MOCHA['text']}",
+                    border_style=MOCHA["overlay1"],
+                )
+            )
+            console.print("─" * 50)
+
+        # Base Information Header
         console.print(
             f"┌─ [bold {MOCHA['overlay1']}]Step 1 of 4:[/bold {MOCHA['overlay1']}] Basic Information\n"
         )
-        # Use questionary.prompt with a list of questions
+
+        # State
+        default_state = existing_data.state if existing_data else ""
+        if "state" in suggestions:
+            default_state = suggestions["state"]
+            console.print(
+                f"  [bold {MOCHA['yellow']}]💡 Suggestion: {suggestions['state']} "
+                f"({suggestions['state_context']})[/bold {MOCHA['yellow']}]"
+            )
+
         questions = [
             {
                 "type": "autocomplete",
-                "name": "state",  # Use a name for each question
+                "name": "state",
                 "message": "State code:",
                 "choices": Config.VALID_STATES,
-                "default": existing_data.state if existing_data else "",
+                "default": default_state,
                 "validate": lambda x: x.upper() in Config.VALID_STATES,
                 "style": PROMPT_STYLE,
             }
@@ -450,209 +538,145 @@ class PromptHandler:
 
         # Client Code
         console.print()
+        default_client = existing_data.client_code if existing_data else ""
+        if "client_code" in suggestions:
+            default_client = suggestions["client_code"]
+            console.print(
+                f"  [bold {MOCHA['yellow']}]💡 Suggestion: {suggestions['client_code']} "
+                f"({suggestions.get('client_code_context', '')})[/bold {MOCHA['yellow']}]"
+            )
+
         questions = [
             {
                 "type": "autocomplete",
                 "name": "client_code",
                 "message": "Client code:",
                 "choices": Config.get_client_choices_list(),
-                "default": (f"{existing_data.client_code}" if existing_data else ""),
-                "validate": lambda x: x.split(":")[0].strip().upper()
-                in Config.CLIENT_CHOICES,
+                "default": default_client,
                 "style": PROMPT_STYLE,
             }
         ]
         answers = questionary.prompt(questions, style=PROMPT_STYLE)
-
         client_code = answers["client_code"].split(":")[0].strip()
 
-        # Display client info
-        PromptHandler.display_client_info(client_code)
-
-        # Base Type (Refactored for rawselect and correct highlighting)
+        # Base Type
         console.print(
             f"\n┌─ [bold {MOCHA['overlay1']}]Step 2 of 4:[/bold {MOCHA['overlay1']}] Document Type\n"
         )
-        base_type_choices = Config.get_base_type_choices()
-        default_base_type = (
-            existing_data.base_type
-            if existing_data and existing_data.base_type in Config.VALID_BASE_TYPES
-            else "NEW"
-        )
-
-        # Find the index of the default base type.
-        try:
-            default_index = [c.value for c in base_type_choices].index(
-                default_base_type
-            )
-        except ValueError:
-            default_index = 0  # Fallback to the first item if not found.
-
-        # Reorder the choices list to put the default item first.
-        reordered_choices = (
-            base_type_choices[default_index:] + base_type_choices[:default_index]
-        )
-
         questions = [
             {
-                "type": "rawselect",
+                "type": "select",
                 "name": "base_type",
                 "message": "Select base type:",
-                "choices": reordered_choices,  # Use the reordered list.
+                "choices": [
+                    f"{k}: {v}" for k, v in Config.BASE_TYPE_DESCRIPTIONS.items()
+                ],
                 "style": PROMPT_STYLE,
-                "use_indicator": True,
             }
         ]
         answers = questionary.prompt(questions, style=PROMPT_STYLE)
-        base_type = answers["base_type"]
+        base_type = answers["base_type"].split(":")[0].strip()
 
         # Description
         console.print(
             f"\n┌─ [bold {MOCHA['overlay1']}]Step 3 of 4:[/bold {MOCHA['overlay1']}] Description\n"
         )
-        questions = [
-            {
-                "type": "text",
-                "name": "description",
-                "message": "Description (optional, use-hyphens-for-spaces):",
-                "default": existing_data.description if existing_data else "",
-                "style": PROMPT_STYLE,
-            }
-        ]
-        answers = questionary.prompt(questions, style=PROMPT_STYLE)
-        description = answers["description"]
+        description = questionary.text(
+            "Description (optional, use-hyphens-for-spaces):",
+            style=PROMPT_STYLE,
+        ).ask()
 
-        if description:
-            description = re.sub(r"\s+", "-", description.lower())
-            description = re.sub(r"[^\w-]", "", description)
-
-        # Product Categories (Refactored for custom handling)
+        # Categories
         console.print(
             f"\n┌─ [bold {MOCHA['overlay1']}]Step 4 of 4:[/bold {MOCHA['overlay1']}] Categories\n"
         )
-        category_choices = Config.get_product_category_choices()
-        selected_categories = []
-        if existing_data and existing_data.product_categories:
-            selected_categories = [
-                cat
-                for cat in existing_data.product_categories
-                if cat in Config.VALID_PRODUCT_CATEGORIES
-            ]
+        categories = questionary.checkbox(
+            "Select product categories (Enter to toggle, [Done] to finish):",
+            choices=Config.VALID_PRODUCT_CATEGORIES,
+            style=PROMPT_STYLE,
+        ).ask()
 
-        choices_with_selection = [
-            Choice(
-                title=(
-                    f"[X] {category}"
-                    if category in selected_categories
-                    else f"[ ] {category}"
-                ),
-                value=category,
-            )
-            for category in Config.VALID_PRODUCT_CATEGORIES
-        ] + [Choice(title="[Done]", value="__DONE__")]
-        questions = [
-            {
-                "type": "rawselect",
-                "name": "product_categories",
-                "message": "Select product categories (Enter to toggle, [Done] to finish):",
-                "choices": choices_with_selection,
-                "style": PROMPT_STYLE,
-                "use_indicator": True,
-            }
-        ]
-        selected_category = questionary.prompt(questions, style=PROMPT_STYLE)[
-            "product_categories"
-        ]
+        console.print("\n✓ Metadata collection complete!")
 
-        if (
-            selected_category != "__DONE__"
-        ):  # Only enter loop if user didn't immediately select done
-            while True:  # Custom loop for category selection
-                if selected_category == "__DONE__":
-                    break
-                elif selected_category in selected_categories:
-                    selected_categories.remove(selected_category)  # Toggle off
-                else:
-                    selected_categories.append(selected_category)  # Toggle on
-
-                choices_with_selection = [
-                    Choice(
-                        title=(
-                            f"[X] {category}"
-                            if category in selected_categories
-                            else f"[ ] {category}"
-                        ),
-                        value=category,
-                    )
-                    for category in Config.VALID_PRODUCT_CATEGORIES
-                ] + [Choice(title="[Done]", value="__DONE__")]
-
-                questions = [
-                    {
-                        "type": "rawselect",
-                        "name": "product_categories",
-                        "message": "Select product categories (Enter to toggle, [Done] to finish):",
-                        "choices": choices_with_selection,
-                        "style": PROMPT_STYLE,
-                        "use_indicator": True,
-                    }
-                ]
-
-                selected_category = questionary.prompt(questions, style=PROMPT_STYLE)[
-                    "product_categories"
-                ]
-
-        console.print(
-            f"\n[bold {MOCHA['green']}]✓ Metadata collection complete![/bold {MOCHA['green']}]\n"
-        )
-        product_categories = selected_categories
-        # Create and return a new DocumentMetadata object
-        return DocumentMetadata(
+        # Create and return complete metadata
+        metadata = DocumentMetadata(
             state=state,
             client_code=client_code,
             base_type=base_type,
             description=description,
-            product_categories=product_categories,
-            expected_filename="",  # Placeholder, will be filled later.
+            product_categories=categories or [],
+            expected_filename="",
         )
 
+        return metadata
+
+    def _get_client_code(self, result: Dict[str, Any]) -> str:
+        """Get client code from classification result."""
+        client_code: Optional[str] = result.get("client_code")
+        return str(client_code) if client_code else ""
+
+    def _get_states(self, result: Dict[str, Any]) -> List[str]:
+        """Get states from classification result."""
+        entities: Dict[str, Any] = result.get("entities", {})
+        states: List[str] = entities.get("states", [])
+        return states
+
     @staticmethod
-    def display_client_info(client_code: str) -> None:
-        """Displays client information if available."""
-        client_info = Config.CLIENT_INFO.get(client_code)
-        if client_info:
-            console.print(
-                f"\n[bold {MOCHA['overlay1']}]Client Information:[/bold {MOCHA['overlay1']}]"
-            )
-            console.print(
-                f"[{MOCHA['text']}]Name:[/{MOCHA['text']}] [{MOCHA['green']}]{client_info.get('name', '')}[/{MOCHA['green']}]"
-            )
-            console.print(
-                f"[{MOCHA['text']}]Contact:[/{MOCHA['text']}] [{MOCHA['green']}]{client_info.get('contact_info', {}).get('primary_contact', '')}[/{MOCHA['green']}]"
-            )
-            console.print(
-                f"[{MOCHA['text']}]Email:[/{MOCHA['text']}] [{MOCHA['green']}]{client_info.get('contact_info', {}).get('email', '')}[/{MOCHA['green']}]"
-            )
-            console.print(
-                f"[{MOCHA['text']}]Active States:[/{MOCHA['text']}] [{MOCHA['green']}]{', '.join(client_info.get('metadata', {}).get('active_states', []))}[/{MOCHA['green']}]\n"
-            )
+    def _get_version() -> str:
+        """Get version information."""
+        return "2.0.0"
+
+    @staticmethod
+    def _get_help() -> str:
+        """Get help information."""
+        return """
+        Document Labeler CLI Tool
+        
+        This tool helps process and label regulatory documents using the Docling classifier.
+        Use --help for more information about available commands.
+        """
+
+    @staticmethod
+    def _get_usage() -> str:
+        """Get usage information."""
+        return """
+        Usage:
+        doc-labeler [OPTIONS] PATH
+        
+        Process a file or directory of files to label regulatory documents.
+        """
+
+    def process_file(self, file_path: str) -> Optional[Dict[str, Any]]:
+        """Process a single file."""
+        # Implementation here
+        return None
+
+    def process_directory(self, directory_path: str) -> List[Dict[str, Any]]:
+        """Process all files in a directory."""
+        # Implementation here
+        return []
+
+    def run(self) -> int:
+        """Run the document labeler."""
+        # Implementation here
+        return 0
 
 
 class DocumentLabeler:
-    """Main class to handle the document labeling process."""
+    """Main class for document labeling functionality."""
 
-    def __init__(self):
-        self.config = Config()
-        self.metadata_store = MetadataStore()
-        self.file_handler = FileHandler()
+    def __init__(self) -> None:
+        """Initialize the document labeler."""
         Config.ensure_directories()
+        self.metadata_store = MetadataStore()
+        self.classifier = DoclingClassifier()
 
     def label_documents(
         self, document_paths: List[pathlib.Path], batch_mode: bool = False
     ) -> None:
         """Label one or more documents."""
         if not document_paths:
-            document_paths = list(self.config.TO_LABEL_DIR.glob("*.pdf"))
+            document_paths = list(Config.TO_LABEL_DIR.glob("*.pdf"))
             if not document_paths:
                 console.print(
                     "[yellow]No documents found in _to_label directory.[/yellow]"
@@ -665,49 +689,54 @@ class DocumentLabeler:
             description="Processing documents...",
             disable=not batch_mode,
         ):
-            self.process_single_document(doc_path, batch_mode)
+            try:
+                self._label_single_document(doc_path, batch_mode)
+            except Exception as e:
+                self._handle_labeling_error(e, doc_path, batch_mode)
 
-    def process_single_document(self, doc_path: str, batch_mode: bool) -> None:
-        """Process a single document."""
-        # Convert the string path back to a Path object.
-        doc_path_obj = pathlib.Path(doc_path)
-        console.print(
-            f"\n[bold blue]Labeling document:[/bold blue] {doc_path_obj.name}"
+    def _label_single_document(self, doc_path: pathlib.Path, batch_mode: bool) -> None:
+        """Label a single document."""
+        console.print(f"\n[bold blue]Labeling document:[/bold blue] {doc_path.name}")
+
+        # Check if document is from external source
+        is_external = Config.TO_LABEL_DIR not in doc_path.parents
+
+        # Get existing metadata if any
+        existing_metadata = self.metadata_store.get(doc_path.name)
+
+        # Prompt for metadata
+        metadata = PromptHandler.prompt_for_metadata(existing_metadata, doc_path)
+
+        # Generate filename
+        metadata.expected_filename = FileHandler.generate_filename(metadata)
+
+        # Move/copy file
+        FileHandler.move_or_copy(
+            doc_path,
+            Config.LABELED_DIR,
+            metadata.expected_filename,
+            is_external,
         )
-        is_external = self.config.TO_LABEL_DIR not in doc_path_obj.parents
-        existing_data = self.metadata_store.get(doc_path_obj.name)
 
-        try:
-            metadata = PromptHandler.prompt_for_metadata(existing_data)
-            metadata.expected_filename = self.file_handler.generate_filename(metadata)
-            self.file_handler.move_or_copy(
-                doc_path_obj,
-                self.config.LABELED_DIR,
-                metadata.expected_filename,
-                is_external,
-            )
-            self.metadata_store.add_or_update(metadata.expected_filename, metadata)
-            console.print(
-                f"[green]Successfully labeled as:[/green] {metadata.expected_filename}"
-            )
-        except ValueError as e:
-            self.handle_labeling_error(
-                e, doc_path_obj, batch_mode
-            )  # Pass Path object here too
+        # Update metadata store
+        self.metadata_store.add_or_update(metadata.expected_filename, metadata)
+        console.print(
+            f"[green]Successfully labeled as:[/green] {metadata.expected_filename}"
+        )
 
-    def handle_labeling_error(
+    def _handle_labeling_error(
         self, error: Exception, doc_path: pathlib.Path, batch_mode: bool
     ) -> None:
         """Handle errors during labeling."""
-        console.print(f"[red]Validation error:[/red] {error}")
+        console.print(f"[red]Error processing {doc_path}:[/red] {str(error)}")
         if (
             not batch_mode
             and questionary.confirm("Would you like to try again?", default=True).ask()
         ):
-            self.process_single_document(doc_path, batch_mode)
+            self._label_single_document(doc_path, batch_mode)
 
     def list_documents(self) -> None:
-        """List all labeled documents and their metadata."""
+        """List all labeled documents."""
         if not self.metadata_store.documents:
             console.print("[yellow]No labeled documents found.[/yellow]")
             return
@@ -715,28 +744,29 @@ class DocumentLabeler:
         table = Table(title="Labeled Documents")
         table.add_column("Filename", style="cyan")
         table.add_column("State", style="magenta")
-        table.add_column("Type", style="green")
         table.add_column("Client", style="yellow")
+        table.add_column("Type", style="green")
         table.add_column("Categories", style="blue")
 
-        for doc_name, doc_data in self.metadata_store.documents.items():
+        for filename, metadata in sorted(self.metadata_store.documents.items()):
             table.add_row(
-                doc_name,
-                doc_data.state,
-                doc_data.base_type,
-                doc_data.client_code,
+                filename,
+                metadata.state,
+                f"{metadata.client_code} ({Config.get_client_name(metadata.client_code)})",
+                metadata.base_type,
                 (
-                    ", ".join(doc_data.product_categories)
-                    if doc_data.product_categories
+                    ", ".join(metadata.product_categories)
+                    if metadata.product_categories
                     else "None"
                 ),
             )
+
         console.print(table)
 
     def show_status(self) -> None:
         """Show the status of documents."""
-        to_label = list(self.config.TO_LABEL_DIR.glob("*.pdf"))
-        labeled = list(self.config.LABELED_DIR.glob("*.pdf"))
+        to_label = list(Config.TO_LABEL_DIR.glob("*.pdf"))
+        labeled = list(Config.LABELED_DIR.glob("*.pdf"))
 
         console.print(f"\n[bold]Documents Status:[/bold]")
         console.print(f"Waiting to be labeled: [yellow]{len(to_label)}[/yellow]")
@@ -750,7 +780,7 @@ class DocumentLabeler:
 
 # --- Click CLI ---
 @click.group()
-def cli():
+def cli() -> None:
     """Document labeling system."""
     pass
 
@@ -759,22 +789,22 @@ def cli():
 @click.argument(
     "document_paths", nargs=-1, type=click.Path(exists=True, path_type=pathlib.Path)
 )
-def label(document_paths: List[pathlib.Path]):
+@click.option("--batch", is_flag=True, help="Run in batch mode without progress bars")
+def label(document_paths: List[pathlib.Path], batch: bool) -> None:
     """Label one or more documents."""
     labeler = DocumentLabeler()
-    # Convert Path objects to strings before passing to label_documents
-    labeler.label_documents([str(path) for path in document_paths])
+    labeler.label_documents(document_paths, batch_mode=batch)
 
 
 @cli.command()
-def list():
+def list() -> None:
     """List all labeled documents."""
     labeler = DocumentLabeler()
     labeler.list_documents()
 
 
 @cli.command()
-def status():
+def status() -> None:
     """Show the status of documents."""
     labeler = DocumentLabeler()
     labeler.show_status()
@@ -782,3 +812,15 @@ def status():
 
 if __name__ == "__main__":
     cli()
+    # Example usage (assuming you have a PDF named 'test.pdf' in '_to_label'):
+    # 1.  Put a test PDF in the 'tests/fixtures/documents/_to_label/' directory.
+    # 2.  Run:  python src/cli/cli_doc_labeler.py label
+    #     (This will process all PDFs in the _to_label directory)
+    #
+    #     OR, to process a specific file:
+    #
+    #     python src/cli/cli_doc_labeler.py label tests/fixtures/documents/_to_label/your_file.pdf
+    #
+    #     OR, to process a specific file:
+    #
+    #     python -m src.cli.cli_doc_labeler2 label /Users/kielay/Delta-Local/2-active-projects/delta-gmail-ai-autolabel/tests/fixtures/documents/_to_label/1234.pdf
