@@ -82,3 +82,6 @@ notebooks/*
 vertex-ai-samples/
 
 .cursorrules
+# /context/**
+# /src/config/**
+# tests/fixtures/documents/**

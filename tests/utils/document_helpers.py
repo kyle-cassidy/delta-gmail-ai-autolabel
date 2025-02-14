@@ -120,6 +120,11 @@ def update_test_documents(documents_dir: Path, labeled_dir: Path):
     
     # Process all PDF files in the source directory
     for pdf_file in documents_dir.rglob("*.pdf"):
+        # Skip files that are in nested target directories
+        if str(labeled_dir) in str(pdf_file):
+            print(f"Skipping file in nested target directory: {pdf_file}")
+            continue
+            
         try:
             # Generate unique filename with date prefix
             creation_date = datetime.fromtimestamp(pdf_file.stat().st_ctime)
