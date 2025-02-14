@@ -1,39 +1,74 @@
 This file is a merged representation of the entire codebase, combined into a single document by Repomix.
 
-# File Summary
+<file_summary>
+This section contains a summary of this file.
 
-## Purpose
+<purpose>
 This file contains a packed representation of the entire repository's contents.
 It is designed to be easily consumable by AI systems for analysis, code review,
 or other automated processes.
+</purpose>
 
-## File Format
+<file_format>
 The content is organized as follows:
 1. This summary section
 2. Repository information
 3. Directory structure
-4. Multiple file entries, each consisting of:
-  a. A header with the file path (## File: path/to/file)
-  b. The full contents of the file in a code block
+4. Repository files, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
 
-## Usage Guidelines
+<usage_guidelines>
 - This file should be treated as read-only. Any changes should be made to the
   original repository files, not this packed version.
 - When processing this file, use the file path to distinguish
   between different files in the repository.
 - Be aware that this file may contain sensitive information. Handle it with
   the same level of security as you would the original repository.
+</usage_guidelines>
 
-## Notes
+<notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
+</notes>
 
-## Additional Info
+<additional_info>
 
-# Directory Structure
-```
+</additional_info>
+
+</file_summary>
+
+<directory_structure>
+.github/
+  workflows/
+    branch-check.yml
+    tests.yml
+presentation/
+  public/
+    file.svg
+    globe.svg
+    next.svg
+    vercel.svg
+    window.svg
+  src/
+    app/
+      components/
+        continuous-presentation.tsx
+      globals.css
+      layout.tsx
+      page.tsx
+  .gitignore
+  eslint.config.mjs
+  next.config.ts
+  outline.md
+  postcss.config.mjs
+  README.md
+  tailwind.config.ts
+scripts/
+  check_branch.py
 src/
   api/
     routes/
@@ -127,6 +162,7 @@ tests/
 .gitignore
 .pre-commit-config.yaml
 .python-version
+.repomixignore
 .sourcery.yaml
 base.txt
 dev.txt
@@ -138,12 +174,817 @@ requirements-dev.txt
 requirements-test.txt
 requirements.txt
 test.txt
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".github/workflows/branch-check.yml">
+name: Branch Name Check
+
+on:
+  pull_request:
+    branches: [ main, master, develop, staging ]
+
+jobs:
+  branch-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check Branch Name
+        run: |
+          BRANCH_NAME=${GITHUB_HEAD_REF}
+          if [[ ! $BRANCH_NAME =~ ^(feature|bugfix|test|docs|refactor)/GH-[0-9]+-[a-z0-9-]+$ ]]; then
+            echo "❌ Branch name must match pattern: type/GH-number-description"
+            exit 1
+          fi
+</file>
+
+<file path=".github/workflows/tests.yml">
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    
+    env:
+      PROJECT_ID: gmail-ai-autolabel
+      REGION: us-central1
+      ENDPOINT_ID: 3233752757731065856
+      GOOGLE_CLOUD_PROJECT: gmail-ai-autolabel
+      VERTEX_AI_ENDPOINT: projects/gmail-ai-autolabel/locations/us-central1/endpoints/3233752757731065856
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Google Auth
+      id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+        create_credentials_file: true
+        export_environment_variables: true
+        cleanup_credentials: true
+        service_account: 'github-actions@gmail-ai-autolabel.iam.gserviceaccount.com'
+        
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+        install_components: 'beta'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements/test.txt
+        pip install -e .
+    
+    - name: Initialize Vertex AI
+      run: |
+        # Use the credentials file created by google-github-actions/auth
+        python -c "
+        import os
+        from google.cloud import aiplatform
+        
+        aiplatform.init(
+            project='${{ env.PROJECT_ID }}',
+            location='${{ env.REGION }}'
+        )
+        print('Successfully initialized Vertex AI')
+        "
+        
+    - name: Run tests
+      env:
+        GCLOUD_PROJECT: ${{ env.PROJECT_ID }}
+        GOOGLE_CLOUD_PROJECT: ${{ env.PROJECT_ID }}
+      run: |
+        pytest tests/ --cov=src --cov-report=xml
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        files: ./coverage.xml
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: ${{ github.repository }}
+        
+    - name: Cleanup
+      if: always()
+      run: |
+        rm -f vertex_credentials.json
+</file>
+
+<file path="presentation/public/file.svg">
+<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
+</file>
+
+<file path="presentation/public/globe.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
+</file>
+
+<file path="presentation/public/next.svg">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
+</file>
+
+<file path="presentation/public/vercel.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
+</file>
+
+<file path="presentation/public/window.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+</file>
+
+<file path="presentation/src/app/components/continuous-presentation.tsx">
+'use client';
+
+import React, { useEffect, useRef } from 'react';
+import { Mail, Bot, Clock, AlertTriangle, Settings, CheckCircle, AlertCircle, ChevronDown } from 'lucide-react';
+import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+
+const Header = () => {
+  const { scrollY } = useScroll();
+  const opacity = useTransform(scrollY, [0, 100], [0, 1]);
+  
+  return (
+    <motion.div 
+      style={{ opacity }}
+      className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-50 border-b border-blue-100"
+    >
+      <nav className="max-w-6xl mx-auto p-4">
+        <div className="flex justify-between items-center">
+          <motion.div 
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text"
+          >
+            Delta Gmail AI
+          </motion.div>
+          <div className="flex space-x-6">
+            {['Challenge', 'Solution', 'How It Works', 'Impact', '2024-2025'].map((item) => (
+              <motion.button
+                key={item}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                {item}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </nav>
+    </motion.div>
+  );
+};
+
+const ScrollIndicator = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 2, duration: 1, repeat: Infinity }}
+    className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-blue-500"
+  >
+    <ChevronDown className="w-8 h-8 animate-bounce" />
+  </motion.div>
+);
+
+const IntroSection = () => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-background pt-20 p-8 flex items-center relative">
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : {}}
+        transition={{ duration: 0.8 }}
+        className="max-w-4xl mx-auto"
+      >
+        <div className="text-center mb-12">
+          <motion.h1
+            initial={{ y: 20, opacity: 0 }}
+            animate={isInView ? { y: 0, opacity: 1 } : {}}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text mb-4"
+          >
+            Delta Gmail AI Autolabel
+          </motion.h1>
+          <motion.p
+            initial={{ y: 20, opacity: 0 }}
+            animate={isInView ? { y: 0, opacity: 1 } : {}}
+            transition={{ delay: 0.4, duration: 0.8 }}
+            className="text-xl text-blue-700"
+          >
+            2024-2025: Transforming Email Management
+          </motion.p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          <motion.div
+            initial={{ x: -50, opacity: 0 }}
+            animate={isInView ? { x: 0, opacity: 1 } : {}}
+            transition={{ delay: 0.6, duration: 0.8 }}
+            className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-shadow duration-300"
+          >
+            <h2 className="text-2xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text mb-6">
+              The Challenge
+            </h2>
+            <div className="space-y-6">
+              <motion.div 
+                className="flex items-start"
+                whileHover={{ x: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Mail className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+                <p className="text-gray-700">
+                  Managing registration emails for dozens of clients across 40 different state regulators
+                </p>
+              </motion.div>
+              <motion.div 
+                className="flex items-start"
+                whileHover={{ x: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Clock className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+                <p className="text-gray-700">
+                  Time-consuming manual processing and classification of emails
+                </p>
+              </motion.div>
+              <motion.div 
+                className="flex items-start"
+                whileHover={{ x: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <AlertTriangle className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+                <p className="text-gray-700">
+                  Risk of missing critical updates and deadlines
+                </p>
+              </motion.div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ x: 50, opacity: 0 }}
+            animate={isInView ? { x: 0, opacity: 1 } : {}}
+            transition={{ delay: 0.8, duration: 0.8 }}
+            className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-shadow duration-300"
+          >
+            <h2 className="text-2xl font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 text-transparent bg-clip-text mb-6">
+              2024-2025 Vision
+            </h2>
+            <div className="space-y-6">
+              <motion.div 
+                className="flex items-start"
+                whileHover={{ x: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Bot className="w-6 h-6 text-purple-500 mr-3 mt-1 flex-shrink-0" />
+                <p className="text-gray-700">
+                  Advanced AI-powered classification with 99% accuracy
+                </p>
+              </motion.div>
+              <motion.div 
+                className="flex items-start"
+                whileHover={{ x: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Mail className="w-6 h-6 text-purple-500 mr-3 mt-1 flex-shrink-0" />
+                <p className="text-gray-700">
+                  Automated labeling and processing of registration-related emails
+                </p>
+              </motion.div>
+              <motion.div 
+                className="flex items-start"
+                whileHover={{ x: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Clock className="w-6 h-6 text-purple-500 mr-3 mt-1 flex-shrink-0" />
+                <p className="text-gray-700">
+                  Save time and reduce headaches with smart automation
+                </p>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
+      <ScrollIndicator />
+    </div>
+  );
+};
+
+const WorkflowSection = () => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-background pt-20 p-8 flex items-center">
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : {}}
+        transition={{ duration: 0.8 }}
+        className="max-w-6xl mx-auto"
+      >
+        <h2 className="text-3xl font-bold text-blue-900 mb-8 text-center">
+          How It Works
+        </h2>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Email Processing Flow */}
+          <div className="bg-gray-50 rounded-lg p-6 shadow-lg">
+            <h3 className="text-xl font-semibold text-blue-800 mb-4">
+              Email Processing Flow
+            </h3>
+            <div className="text-sm text-gray-600 mb-4">
+              From arrival to completion, here's how we handle your emails:
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center p-3 bg-blue-50 rounded-lg">
+                <Mail className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0" />
+                <div>
+                  <div className="font-medium text-blue-900">Email Received</div>
+                  <div className="text-sm text-blue-700">Initial security checks and validation</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center p-3 bg-purple-50 rounded-lg">
+                <Settings className="w-5 h-5 text-purple-600 mr-3 flex-shrink-0" />
+                <div>
+                  <div className="font-medium text-purple-900">Processing</div>
+                  <div className="text-sm text-purple-700">Content extraction and analysis</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center p-3 bg-indigo-50 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-indigo-600 mr-3 flex-shrink-0" />
+                <div>
+                  <div className="font-medium text-indigo-900">Classification</div>
+                  <div className="text-sm text-indigo-700">AI-powered categorization and labeling</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center p-3 bg-green-50 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-green-600 mr-3 flex-shrink-0" />
+                <div>
+                  <div className="font-medium text-green-900">Completion</div>
+                  <div className="text-sm text-green-700">Storage and integration with Airtable</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Technical Flow */}
+          <div className="bg-gray-50 rounded-lg p-6 shadow-lg">
+            <h3 className="text-xl font-semibold text-blue-800 mb-4">
+              Technical Architecture
+            </h3>
+            <div className="text-sm text-gray-600 mb-4">
+              Behind the scenes, our system uses multiple specialized components:
+            </div>
+            
+            <img 
+              src="/api/placeholder/600/400" 
+              alt="System Architecture Diagram" 
+              className="w-full h-64 object-cover rounded-lg mb-4 bg-gray-100"
+            />
+            
+            <div className="space-y-2 text-sm text-gray-700">
+              <div className="font-medium">Key Components:</div>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Email Monitoring Service</li>
+                <li>Content Processing Engine</li>
+                <li>Classification System</li>
+                <li>Integration Layer</li>
+                <li>Storage & Database Systems</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+const ImpactSection = () => (
+  <div className="min-h-screen bg-gradient-to-br from-background via-background to-background pt-20 p-8 flex items-center">
+    <div className="max-w-4xl mx-auto">
+      <h2 className="text-3xl font-bold text-emerald-900 mb-8 text-center">
+        Real-World Impact
+      </h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-white rounded-lg p-6 shadow-lg">
+          <h3 className="text-xl font-semibold text-emerald-800 mb-4">
+            Time Savings
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center p-3 bg-emerald-50 rounded-lg">
+              <Clock className="w-5 h-5 text-emerald-600 mr-3 flex-shrink-0" />
+              <div>
+                <div className="font-medium text-emerald-900">Faster Processing</div>
+                <div className="text-sm text-emerald-700">
+                  Reduce email processing time from hours to minutes
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-6 shadow-lg">
+          <h3 className="text-xl font-semibold text-emerald-800 mb-4">
+            Better Organization
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center p-3 bg-emerald-50 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-emerald-600 mr-3 flex-shrink-0" />
+              <div>
+                <div className="font-medium text-emerald-900">Improved Accuracy</div>
+                <div className="text-sm text-emerald-700">
+                  Consistent classification and organized tracking
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const NextStepsSection = () => (
+  <div className="min-h-screen bg-gradient-to-br from-background via-background to-background pt-20 p-8 flex items-center">
+    <div className="max-w-4xl mx-auto">
+      <h2 className="text-3xl font-bold text-purple-900 mb-8 text-center">
+        Next Steps
+      </h2>
+      
+      <div className="bg-white rounded-lg p-6 shadow-lg">
+        <div className="space-y-6">
+          <div className="flex items-start">
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-2xl text-purple-600">1</span>
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-semibold text-purple-900">Implementation</h3>
+              <p className="text-gray-600">Initial setup and configuration of the system</p>
+            </div>
+          </div>
+          
+          <div className="flex items-start">
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-2xl text-purple-600">2</span>
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-semibold text-purple-900">Training</h3>
+              <p className="text-gray-600">Team training and system optimization</p>
+            </div>
+          </div>
+          
+          <div className="flex items-start">
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-2xl text-purple-600">3</span>
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-semibold text-purple-900">Expansion</h3>
+              <p className="text-gray-600">Adding more features and capabilities</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const DeltaPresentation = () => {
+  return (
+    <div className="relative">
+      <Header />
+      <IntroSection />
+      <WorkflowSection />
+      <ImpactSection />
+      <NextStepsSection />
+    </div>
+  );
+};
+
+export default DeltaPresentation;
+</file>
+
+<file path="presentation/src/app/globals.css">
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+</file>
+
+<file path="presentation/src/app/layout.tsx">
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+})
+
+export const metadata: Metadata = {
+  title: 'Delta Gmail AI - 2024-2025 Vision',
+  description: 'Transforming Email Management with AI',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <body className={`${inter.variable} font-sans`}>{children}</body>
+    </html>
+  )
+}
+</file>
+
+<file path="presentation/src/app/page.tsx">
+'use client';
+
+import DeltaPresentation from './components/continuous-presentation';
+
+export default function Home() {
+  return (
+    <main className="min-h-screen">
+      <DeltaPresentation />
+    </main>
+  );
+}
+</file>
+
+<file path="presentation/.gitignore">
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+</file>
+
+<file path="presentation/eslint.config.mjs">
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { FlatCompat } from "@eslint/eslintrc";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+];
+
+export default eslintConfig;
+</file>
+
+<file path="presentation/next.config.ts">
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
+</file>
+
+<file path="presentation/outline.md">
+# Delta Gmail AI Autolabel - Presentation Outline
+
+## 1. The Challenge
+- Managing dozens of clients with multiple products
+- 40 different state regulators, each with unique processes
+- High volume of critical communications
+- Time-consuming manual processing
+- Risk of missing important updates
+
+## 2. The Vision
+- An inbox that thinks like a human but works at machine speed
+- Automated classification and organization
+- Seamless integration with existing tools
+- Time savings and reduced headaches
+
+## 3. How It Works
+- Email monitoring and security
+- Smart content analysis
+- Automatic classification
+- Integration with Gmail, Gmelius, and Airtable
+- Human oversight and verification
+
+## 4. Key Benefits
+- Faster processing of registration-related emails
+- Reduced risk of missing critical communications
+- Better organization and tracking
+- Time saved on manual tasks
+- Improved team collaboration
+
+## 5. Real-World Impact
+- Examples of automated workflows
+- Time saved per email
+- Improved accuracy in classification
+- Better registration tracking
+
+## 6. Next Steps
+- Implementation timeline
+- Training and adoption
+- Continuous improvement
+- Future enhancements
+
+## 7. Q&A and Discussion
+- Team feedback
+- Questions and concerns
+- Additional feature requests
+</file>
+
+<file path="presentation/postcss.config.mjs">
+/** @type {import('postcss-load-config').Config} */
+const config = {
+  plugins: {
+    tailwindcss: {},
+  },
+};
+
+export default config;
+</file>
+
+<file path="presentation/README.md">
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-# Files
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## File: src/api/routes/classification.py
-````python
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+</file>
+
+<file path="presentation/tailwind.config.ts">
+import type { Config } from "tailwindcss";
+
+export default {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        gradient: {
+          start: "var(--background-start)",
+          end: "var(--background-end)",
+        },
+      },
+    },
+  },
+  plugins: [],
+} satisfies Config;
+</file>
+
+<file path="scripts/check_branch.py">
+#!/usr/bin/env python
+import sys
+import re
+import subprocess
+
+
+def get_current_branch():
+    return (
+        subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        .decode("utf-8")
+        .strip()
+    )
+
+
+def check_branch_name():
+    branch = get_current_branch()
+
+    # Protected branches
+    protected = ["main", "master", "develop", "staging"]
+    if branch in protected:
+        print(f"❌ Cannot commit directly to {branch}")
+        return 1
+
+    # Branch pattern: type/GH-number-description
+    pattern = r"^(feature|bugfix|test|docs|refactor)/GH-\d+-[a-z0-9-]+$"
+    if not re.match(pattern, branch):
+        print("❌ Branch name must match pattern: type/GH-number-description")
+        print("Example: feature/GH-123-gmail-connectivity")
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(check_branch_name())
+</file>
+
+<file path="src/api/routes/classification.py">
 """
 Classification API Routes
 
@@ -295,10 +1136,9 @@ async def get_current_config(
         Dictionary of current configuration settings
     """
     return config.dict(exclude_none=True)
-````
+</file>
 
-## File: src/api/main.py
-````python
+<file path="src/api/main.py">
 """
 FastAPI Web Service for Document Classification
 """
@@ -332,10 +1172,9 @@ async def health_check():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
-````
+</file>
 
-## File: src/api/README.md
-````markdown
+<file path="src/api/README.md">
 # Document Classification API
 
 This API service provides document classification capabilities using Google's Gemini Flash model. It can process regulatory documents (PDFs, images) and extract structured information about their content, type, and entities.
@@ -454,10 +1293,9 @@ For production deployment:
 3. Implement authentication/authorization
 4. Add rate limiting
 5. Configure proper logging
-````
+</file>
 
-## File: src/classifiers/__init__.py
-````python
+<file path="src/classifiers/__init__.py">
 """
 Document Classification Package
 
@@ -475,10 +1313,9 @@ __all__ = [
     'GeminiClassifier',
     'ClassifierFactory'
 ]
-````
+</file>
 
-## File: src/classifiers/base.py
-````python
+<file path="src/classifiers/base.py">
 """
 Base Classifier Interface
 
@@ -557,10 +1394,9 @@ class BaseDocumentClassifier(ABC):
             - description: Brief description of how it works
         """
         pass
-````
+</file>
 
-## File: src/classifiers/docling.py
-````python
+<file path="src/classifiers/docling.py">
 """
 Docling Document Classifier Implementation
 
@@ -923,10 +1759,9 @@ class DoclingClassifier(BaseDocumentClassifier):
             summary=None,
             flags=['CLASSIFICATION_ERROR']
         )
-````
+</file>
 
-## File: src/classifiers/domain_config.py
-````python
+<file path="src/classifiers/domain_config.py">
 """
 Domain Configuration Loader
 
@@ -1279,10 +2114,9 @@ class DomainConfig:
                 
         logger.debug("No match found")
         return None, 0.0
-````
+</file>
 
-## File: src/classifiers/factory.py
-````python
+<file path="src/classifiers/factory.py">
 """
 Classifier Factory
 
@@ -1359,10 +2193,9 @@ class ClassifierFactory:
             except Exception as e:
                 info[name] = f"(Configuration required) {str(e)}"
         return info
-````
+</file>
 
-## File: src/classifiers/gemini.py
-````python
+<file path="src/classifiers/gemini.py">
 """
 Gemini Flash Document Classifier Implementation
 """
@@ -1749,10 +2582,9 @@ class GeminiClassifier(BaseDocumentClassifier):
             summary=None,
             flags=['CLASSIFICATION_ERROR']
         )
-````
+</file>
 
-## File: src/cli/cli_doc_labeler.py
-````python
+<file path="src/cli/cli_doc_labeler.py">
 #!/usr/bin/env python3
 """Document Labeler CLI (Refactored)"""
 
@@ -2537,10 +3369,9 @@ def status():
 
 if __name__ == "__main__":
     cli()
-````
+</file>
 
-## File: src/cli/document_classifier.py
-````python
+<file path="src/cli/document_classifier.py">
 """
 Document Classification CLI
 
@@ -2670,10 +3501,9 @@ def _display_result(result):
 def main():
     """Entry point for the CLI."""
     asyncio.run(cli())
-````
+</file>
 
-## File: src/cli/document_labeler.py
-````python
+<file path="src/cli/document_labeler.py">
 #!/usr/bin/env python3
 """
 Document Labeler CLI
@@ -3430,19 +4260,17 @@ def status():
 
 if __name__ == "__main__":
     cli()
-````
+</file>
 
-## File: src/client/__init__.py
-````python
+<file path="src/client/__init__.py">
 from src.client.gmail import Gmail
 from src.client import query
 from src.client import label
 
 __all__ = ['Gmail', 'query', 'label']
-````
+</file>
 
-## File: src/client/attachment.py
-````python
+<file path="src/client/attachment.py">
 """
 File: attachment.py
 -------------------
@@ -3550,10 +4378,9 @@ class Attachment(object):
 
         with open(filepath, 'wb') as f:
             f.write(self.data)
-````
+</file>
 
-## File: src/client/gmail_client_README.md
-````markdown
+<file path="src/client/gmail_client_README.md">
 # SimpleGmail
 [![PyPI Downloads](https://img.shields.io/pypi/dm/simplegmail.svg?label=PyPI%20downloads)](
 https://pypi.org/project/simplegmail/)
@@ -3843,10 +4670,9 @@ For more on what you can do with queries, read the docstring for `construct_quer
 
 If there is functionality you'd like to see added, or any bugs in this project,
 please let me know by posting an issue or submitting a pull request!
-````
+</file>
 
-## File: src/client/gmail.py
-````python
+<file path="src/client/gmail.py">
 """
 File: gmail.py
 --------------
@@ -5072,10 +5898,9 @@ class Gmail(object):
 
         res = req.execute()
         return res
-````
+</file>
 
-## File: src/client/label.py
-````python
+<file path="src/client/label.py">
 """
 File: label.py
 --------------
@@ -5137,10 +5962,9 @@ SOCIAL     = Label('CATEGORY_SOCIAL', 'CATEGORY_SOCIAL')
 PROMOTIONS = Label('CATEGORY_PROMOTIONS', 'CATEGORY_PROMOTIONS')
 UPDATES    = Label('CATEGORY_UPDATES', 'CATEGORY_UPDATES')
 FORUMS     = Label('CATEGORY_FORUMS', 'CATEGORY_FORUMS')
-````
+</file>
 
-## File: src/client/message.py
-````python
+<file path="src/client/message.py">
 """
 File: message.py
 ----------------
@@ -5582,10 +6406,9 @@ class Message(object):
                 lbl.id if isinstance(lbl, Label) else lbl for lbl in to_remove
             ]
         }
-````
+</file>
 
-## File: src/client/query.py
-````python
+<file path="src/client/query.py">
 """
 File: query.py
 --------------
@@ -6256,27 +7079,24 @@ def _has(attribute: str) -> str:
     """
 
     return f'has:{attribute}'
-````
+</file>
 
-## File: src/logging/logger.py
-````python
+<file path="src/logging/logger.py">
 import logging
 
 def setup_logging():
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
     return logger
-````
+</file>
 
-## File: src/models/paligemma/__init__.py
-````python
+<file path="src/models/paligemma/__init__.py">
 """PaLIGemma deployment and prediction utilities."""
 
 __version__ = "0.1.0"
-````
+</file>
 
-## File: src/models/paligemma/deploy.py
-````python
+<file path="src/models/paligemma/deploy.py">
 #!/usr/bin/env python3
 
 """Deploy PaLIGemma model to Vertex AI."""
@@ -6382,10 +7202,9 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-````
+</file>
 
-## File: src/models/paligemma/predict.py
-````python
+<file path="src/models/paligemma/predict.py">
 #!/usr/bin/env python3
 
 """PaLIGemma prediction utilities."""
@@ -6510,10 +7329,9 @@ if __name__ == "__main__":
         logging.info(f"Prediction response: {response}")
     except Exception as e:
         logging.error(f"All prediction attempts failed: {e}")
-````
+</file>
 
-## File: src/parsers/gmail-message-class-existing-parsing-capabilities.md
-````markdown
+<file path="src/parsers/gmail-message-class-existing-parsing-capabilities.md">
 Let's analyze the available tools and create a document outlining our content extraction strategy.
 From the Gmail client, we have these key capabilities:
 
@@ -6615,10 +7433,9 @@ class Attachment(object):
         self.filetype = filetype
         self.data = data
 ```
-````
+</file>
 
-## File: src/parsers/PARSING_STRATEGY.md
-````markdown
+<file path="src/parsers/PARSING_STRATEGY.md">
 # Content Extraction Strategy
 
 ## Email Content Parsing
@@ -6724,10 +7541,9 @@ class ParserFactory:
 3. Add PDF parsing support
 4. Add Office document support
 5. Implement entity extraction
-````
+</file>
 
-## File: src/services/audit_service.py
-````python
+<file path="src/services/audit_service.py">
 """
 AuditService: Manages system auditing and compliance tracking.
 
@@ -6818,10 +7634,9 @@ class AuditService:
             end_time = datetime.utcnow()
         delta = end_time - start_time
         return int(delta.total_seconds() * 1000)
-````
+</file>
 
-## File: src/services/classification_service.py
-````python
+<file path="src/services/classification_service.py">
 """
 ClassificationService: Manages email and document classification.
 
@@ -7003,10 +7818,9 @@ class ClassificationService:
         except KeyboardInterrupt:
             observer.stop()
         observer.join()
-````
+</file>
 
-## File: src/services/content_extraction_service.py
-````python
+<file path="src/services/content_extraction_service.py">
 """
 Content Extraction Service using Google's Gemini Flash
 """
@@ -7179,10 +7993,9 @@ class ContentExtractionService:
                     'error': str(e)
                 })
         return results
-````
+</file>
 
-## File: src/services/email_processing_service.py
-````python
+<file path="src/services/email_processing_service.py">
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 from datetime import datetime
@@ -7342,10 +8155,9 @@ class EmailProcessingService:
 class SecurityException(Exception):
     """Raised when an email fails security checks"""
     pass
-````
+</file>
 
-## File: src/services/notification_service.py
-````python
+<file path="src/services/notification_service.py">
 """
 NotificationService: Handles system and user notifications.
 
@@ -7357,10 +8169,9 @@ Responsibilities:
 - Alert throttling
 - Notification preferences
 """
-````
+</file>
 
-## File: src/services/security_service.py
-````python
+<file path="src/services/security_service.py">
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from datetime import datetime
@@ -7637,10 +8448,9 @@ class SecurityService:
             details=details,
             timestamp=datetime.utcnow()
         )
-````
+</file>
 
-## File: src/services/storage_service.py
-````python
+<file path="src/services/storage_service.py">
 """
 StorageService: Manages data persistence and storage operations.
 
@@ -7652,10 +8462,9 @@ Responsibilities:
 - Storage optimization
 - Backup coordination
 """
-````
+</file>
 
-## File: src/services/validation_service.py
-````python
+<file path="src/services/validation_service.py">
 """
 ValidationService: Handles data validation and integrity.
 
@@ -7667,18 +8476,16 @@ Responsibilities:
 - Data integrity checks
 - Validation reporting
 """
-````
+</file>
 
-## File: src/utils/main.py
-````python
+<file path="src/utils/main.py">
 import logging
 import structlog
 
 logger = structlog.get_logger()
-````
+</file>
 
-## File: src/utils/version_checker.py
-````python
+<file path="src/utils/version_checker.py">
 """Version checker utility for configuration files."""
 from pathlib import Path
 import yaml
@@ -7810,19 +8617,17 @@ class VersionChecker:
             return True
         except ValueError:
             return False
-````
+</file>
 
-## File: src/__init__.py
-````python
+<file path="src/__init__.py">
 """
 Your project description.
 """
 
 __version__ = "0.1.0"
-````
+</file>
 
-## File: src/console.py
-````python
+<file path="src/console.py">
 from src.client.gmail import Gmail
 
 
@@ -7859,10 +8664,9 @@ def test_connectivity() -> bool:
 
 if __name__ == "__main__":
     test_connectivity()
-````
+</file>
 
-## File: src/modules_overview.md
-````markdown
+<file path="src/modules_overview.md">
 # Project Structure and Module Overview
 
 ## Core Components
@@ -7912,10 +8716,9 @@ if __name__ == "__main__":
 - Comprehensive test coverage
 - API documentation generation
 - Development/production parity
-````
+</file>
 
-## File: tests/cli/test_cli_doc_labeler.py
-````python
+<file path="tests/cli/test_cli_doc_labeler.py">
 # test_labeler.py
 import pytest
 import pathlib
@@ -8041,10 +8844,9 @@ def test_document_labeler_integration(mock_questionary, setup_test_environment):
     labeler.list_documents()  # Check it runs without errors
     # Check status command (basic integration test)
     labeler.show_status()  # Check it runs without error.
-````
+</file>
 
-## File: tests/client/test_gmail.py
-````python
+<file path="tests/client/test_gmail.py">
 import pytest
 from unittest.mock import MagicMock, patch
 from src.client.gmail import Gmail
@@ -8236,10 +9038,9 @@ def test_list_labels(gmail_client, mock_gmail_api):
     assert labels[1].id == 'Label_2'
     assert labels[1].name == 'Second Label'
     mock_gmail_api.users().labels().list.assert_called_with(userId='me')
-````
+</file>
 
-## File: tests/client/test_message.py
-````python
+<file path="tests/client/test_message.py">
 import pytest
 from unittest.mock import MagicMock
 from src.client.message import Message
@@ -8456,10 +9257,9 @@ def test_header_parsing(mock_service, mock_creds):
     assert len(message.bcc) == 1
     assert message.bcc[0] == 'bcc@example.com'
     assert message.headers.get('Reply-To') == 'reply@example.com'
-````
+</file>
 
-## File: tests/integration/test_classification_service.py
-````python
+<file path="tests/integration/test_classification_service.py">
 """
 Integration tests for the classification service.
 """
@@ -8577,10 +9377,9 @@ async def test_error_handling(test_config_dir):
     # Test with invalid email message
     with pytest.raises(AttributeError):
         await service.classify_email("not_an_email_message")
-````
+</file>
 
-## File: tests/integration/test_classifier_integration.py
-````python
+<file path="tests/integration/test_classifier_integration.py">
 import pytest
 from pathlib import Path
 import os
@@ -8728,10 +9527,9 @@ async def test_large_document_handling(gemini_classifier, tmp_path):
     
     with pytest.raises(ValueError, match="exceeds 20MB limit"):
         await gemini_classifier.classify_document(large_doc)
-````
+</file>
 
-## File: tests/integration/test_labeled_documents.py
-````python
+<file path="tests/integration/test_labeled_documents.py">
 """
 Integration tests using labeled PDF documents.
 """
@@ -8868,10 +9666,9 @@ async def test_specific_document(labeled_documents_dir, document_metadata, test_
         "Company mismatch"
     assert set(result.entities["states"]) == set(expected["expected_entities"]["states"]), \
         "State mismatch"
-````
+</file>
 
-## File: tests/mocks/docling.py
-````python
+<file path="tests/mocks/docling.py">
 """Mock Docling package for testing."""
 from typing import List, Dict, Any
 
@@ -8929,10 +9726,9 @@ class MockDocument:
     
     def get_summary(self) -> str:
         return "Test document summary"
-````
+</file>
 
-## File: tests/models/paligemma/conftest.py
-````python
+<file path="tests/models/paligemma/conftest.py">
 import pytest
 import os
 from unittest.mock import patch
@@ -8972,10 +9768,9 @@ def sample_prediction_response():
             "This image shows a person sitting at a desk working on a computer."
         ]
     }
-````
+</file>
 
-## File: tests/models/paligemma/test_predict.py
-````python
+<file path="tests/models/paligemma/test_predict.py">
 import pytest
 import base64
 from unittest.mock import patch, MagicMock
@@ -9089,10 +9884,9 @@ def test_environment_variables():
     required_vars = ["PROJECT_ID", "ENDPOINT_ID", "REGION"]
     for var in required_vars:
         assert os.getenv(var) is not None, f"Missing environment variable: {var}"
-````
+</file>
 
-## File: tests/services/test_audit_service.py
-````python
+<file path="tests/services/test_audit_service.py">
 import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -9221,10 +10015,9 @@ async def test_get_error_statistics(audit_service, mock_storage):
     # Verify
     assert stats == mock_stats
     mock_storage.get_error_statistics.assert_called_once()
-````
+</file>
 
-## File: tests/services/test_classification_service.py
-````python
+<file path="tests/services/test_classification_service.py">
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
@@ -9268,10 +10061,9 @@ async def test_priority_determination():
 async def test_classification_accuracy_tracking():
     # TODO: Implement once ClassificationService is implemented
     pass
-````
+</file>
 
-## File: tests/services/test_content_extraction_service.py
-````python
+<file path="tests/services/test_content_extraction_service.py">
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.services.content_extraction_service import ContentExtractionService
@@ -9366,10 +10158,9 @@ async def test_error_handling(content_extraction_service, tmp_path):
         with pytest.raises(Exception) as exc_info:
             await content_extraction_service.extract_content(test_file)
         assert "Failed to parse" in str(exc_info.value)
-````
+</file>
 
-## File: tests/services/test_email_processing_service.py
-````python
+<file path="tests/services/test_email_processing_service.py">
 """
 Tests for the EmailProcessingService class.
 
@@ -9624,10 +10415,9 @@ async def test_get_processing_state(email_processing_service, sample_message):
            "Metadata should include sender information"
     assert state.metadata["subject"] == sample_message.subject, \
            "Metadata should include email subject"
-````
+</file>
 
-## File: tests/services/test_security_service.py
-````python
+<file path="tests/services/test_security_service.py">
 """
 Tests for the SecurityService class.
 
@@ -9911,10 +10701,9 @@ async def test_scan_attachment(security_service):
         "Scan should provide detailed analysis results"
     assert isinstance(result["scan_results"], dict), \
         "Scan results should contain structured analysis data"
-````
+</file>
 
-## File: tests/test-simplegmail/test_query.py
-````python
+<file path="tests/test-simplegmail/test_query.py">
 from simplegmail import query
 
 class TestQuery(object):
@@ -9990,10 +10779,9 @@ class TestQuery(object):
             )
         )
         assert query_string == expect
-````
+</file>
 
-## File: tests/unit/test_base_classifier.py
-````python
+<file path="tests/unit/test_base_classifier.py">
 import pytest
 from pathlib import Path
 from src.classifiers.base import BaseDocumentClassifier, ClassificationResult
@@ -10069,10 +10857,9 @@ def test_client_identification():
         flags=["UNKNOWN_CLIENT"]
     )
     assert unknown_client.client_code is None
-````
+</file>
 
-## File: tests/unit/test_classifier_factory.py
-````python
+<file path="tests/unit/test_classifier_factory.py">
 import pytest
 from src.classifiers.factory import ClassifierFactory
 from src.classifiers.base import BaseDocumentClassifier
@@ -10138,10 +10925,9 @@ def test_create_docling_classifier(test_config_dir):
         config_dir=test_config_dir
     )
     assert isinstance(classifier, DoclingClassifier)
-````
+</file>
 
-## File: tests/unit/test_cli.py
-````python
+<file path="tests/unit/test_cli.py">
 """
 Unit tests for the document classification CLI.
 """
@@ -10236,10 +11022,9 @@ def test_watch_command_help(cli_runner):
     assert "Watch a directory" in result.output
     assert "--pattern" in result.output
     assert "--recursive" in result.output
-````
+</file>
 
-## File: tests/unit/test_client_identification.py
-````python
+<file path="tests/unit/test_client_identification.py">
 import pytest
 from pathlib import Path
 from src.classifiers.base import ClassificationResult
@@ -10448,10 +11233,9 @@ def test_unknown_client_handling():
     assert result.client_code is None
     assert result.metadata["needs_review"]
     assert "UNKNOWN_CLIENT" in result.flags
-````
+</file>
 
-## File: tests/unit/test_docling_classifier.py
-````python
+<file path="tests/unit/test_docling_classifier.py">
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -10688,10 +11472,9 @@ def test_metadata_enhancement(test_config_dir, mock_docling_doc, monkeypatch):
     
     assert "CA" in enhanced["entities"]["states"]
     assert enhanced["metadata"]["source_metadata"] == metadata
-````
+</file>
 
-## File: tests/unit/test_document_helpers.py
-````python
+<file path="tests/unit/test_document_helpers.py">
 """
 Tests for document helper utilities.
 """
@@ -10784,10 +11567,9 @@ def test_update_test_documents(tmp_path):
         assert "document_type" in entry
         assert "workflow_state" in entry
         assert "expected_entities" in entry
-````
+</file>
 
-## File: tests/unit/test_domain_config.py
-````python
+<file path="tests/unit/test_domain_config.py">
 import pytest
 from pathlib import Path
 from src.classifiers.domain_config import DomainConfig
@@ -10901,10 +11683,9 @@ def test_validate_registration_number(domain_config):
     
     # Test unknown state (should pass)
     assert domain_config.validate_registration_number("XX-1234", "XX")
-````
+</file>
 
-## File: tests/unit/test_gemini_classifier.py
-````python
+<file path="tests/unit/test_gemini_classifier.py">
 """
 Unit tests for the Gemini document classifier.
 """
@@ -11228,10 +12009,9 @@ def test_metadata_enhancement(test_config_dir, mock_gemini_response, monkeypatch
     
     assert "CA" in enhanced["entities"]["states"]
     assert enhanced["metadata"]["source_metadata"] == metadata
-````
+</file>
 
-## File: tests/utils/document_helpers.py
-````python
+<file path="tests/utils/document_helpers.py">
 """
 Test document management utilities.
 """
@@ -11391,10 +12171,9 @@ def update_test_documents(documents_dir: Path, labeled_dir: Path):
     # Save updated metadata
     with open(metadata_file, 'w') as f:
         json.dump(metadata, f, indent=2)
-````
+</file>
 
-## File: tests/conftest.py
-````python
+<file path="tests/conftest.py">
 """
 Test configuration and fixtures for the document classification system.
 """
@@ -11635,18 +12414,16 @@ def mock_env(monkeypatch):
     """Mock environment variables."""
     monkeypatch.setenv("GOOGLE_API_KEY", "test_key")
     monkeypatch.setenv("TESTING", "true")
-````
+</file>
 
-## File: tests/main.py
-````python
+<file path="tests/main.py">
 import pytest
 
 def test_sample():
     assert True
-````
+</file>
 
-## File: tests/README.md
-````markdown
+<file path="tests/README.md">
 # Document Classification Test Suite
 
 This directory contains the test suite for the document classification system. The tests are organized into unit tests and integration tests to ensure both individual components and the system as a whole work correctly.
@@ -11764,10 +12541,9 @@ When contributing new features or bug fixes:
 2. Ensure all tests pass locally
 3. Maintain or improve code coverage
 4. Follow existing test patterns and naming conventions
-````
+</file>
 
-## File: .codecov.yml
-````yaml
+<file path=".codecov.yml">
 coverage:
   status:
     project:
@@ -11787,10 +12563,9 @@ comment:
 ignore:
   - "tests/**/*"
   - "setup.py"
-````
+</file>
 
-## File: .env.example
-````
+<file path=".env.example">
 DEBUG=True
 API_KEY=your_key_here
 
@@ -11800,10 +12575,9 @@ GMAIL_CLIENT_SECRET=your_client_secret
 GMAIL_REFRESH_TOKEN=your_refresh_token
 GMAIL_TOKEN_URI=https://oauth2.googleapis.com/token
 CODECOV_TOKEN=your_codecov_token
-````
+</file>
 
-## File: .gitignore
-````
+<file path=".gitignore">
 # Python
 __pycache__/
 *.py[cod]
@@ -11901,21 +12675,9 @@ docs/4-schemas/**
 /context/**
 /src/config/**
 tests/fixtures/documents/**
-presentation/**
-notebooks/**
-notes/**
-.mypy_cache/**
-.ruff_cache/**
-.cache/**
-.pytest_cache/**
-.DS_Store
-.DS_Store?
-.github/**
-.repomixignore
-````
+</file>
 
-## File: .pre-commit-config.yaml
-````yaml
+<file path=".pre-commit-config.yaml">
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
@@ -11932,15 +12694,20 @@ repos:
         entry: python scripts/check_branch.py
         language: system
         pass_filenames: false
-````
+</file>
 
-## File: .python-version
-````
+<file path=".python-version">
 3.11.7
-````
+</file>
 
-## File: .sourcery.yaml
-````yaml
+<file path=".repomixignore">
+# Add patterns to ignore here, one per line
+# Example:
+# *.log
+# tmp/
+</file>
+
+<file path=".sourcery.yaml">
 version: '1'
 ignore:
   - .git
@@ -11959,10 +12726,9 @@ rules:
     enabled: true
   - name: no-loop-in-tests
     enabled: false
-````
+</file>
 
-## File: base.txt
-````
+<file path="base.txt">
 # Base requirements
 requests>=2.28.0
 pyyaml>=6.0
@@ -11985,10 +12751,9 @@ python-multipart==0.0.9
 # Add Docling and its dependencies
 docling>=1.0.0  # Note: Update version as needed
 torch>=2.0.0    # Required for Docling's ML components
-````
+</file>
 
-## File: dev.txt
-````
+<file path="dev.txt">
 # Dev requirements
 -r base.txt
 black>=23.12.0
@@ -11998,10 +12763,9 @@ pre-commit>=2.20.0
 types-Pillow>=10.1.0
 types-requests>=2.31.0
 types-python-dateutil>=2.8.19
-````
+</file>
 
-## File: Makefile
-````
+<file path="Makefile">
 # Makefile for project management
 
 .PHONY: setup test lint format clean
@@ -12029,10 +12793,9 @@ clean:
 	find . -type d -name "*.egg" -exec rm -rf {} +
 	find . -type d -name ".pytest_cache" -exec rm -rf {} +
 	find . -type d -name ".mypy_cache" -exec rm -rf {} +
-````
+</file>
 
-## File: mypy.ini
-````
+<file path="mypy.ini">
 [mypy]
 ignore_missing_imports = True
 disallow_untyped_defs = True
@@ -12040,10 +12803,9 @@ check_untyped_defs = True
 
 [mypy.plugins.django.*]
 init_typed = True
-````
+</file>
 
-## File: plan.md
-````markdown
+<file path="plan.md">
 # Delta Inbox
 ## Email Parsing and AI Labeling Integration Plan
 
@@ -12334,10 +13096,9 @@ Additional Considerations
 	•	Scalability and Performance:
 	•	Build the application to handle increased email volumes.
 	•	Optimize for performance in parsing and processing.
-````
+</file>
 
-## File: pytest.ini
-````
+<file path="pytest.ini">
 [pytest]
 # Set asyncio loop scope to function level
 asyncio_mode = auto
@@ -12372,10 +13133,9 @@ log_cli = true
 log_cli_level = INFO
 log_cli_format = %(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)
 log_cli_date_format = %Y-%m-%d %H:%M:%S
-````
+</file>
 
-## File: requirements-dev.txt
-````
+<file path="requirements-dev.txt">
 # Test dependencies
 pytest>=8.0.0
 pytest-asyncio>=0.25.2
@@ -12414,10 +13174,9 @@ types-python-dateutil
 # Additional dependencies
 types-Pillow==10.1.0.2
 types-requests==2.31.0.20240106
-````
+</file>
 
-## File: requirements-test.txt
-````
+<file path="requirements-test.txt">
 pytest==8.0.0
 pytest-asyncio==0.23.5
 pytest-cov==4.1.0
@@ -12428,18 +13187,16 @@ click>=8.0.0
 watchdog>=3.0.0
 pyyaml>=6.0.0
 google-generativeai>=0.3.0
-````
+</file>
 
-## File: requirements.txt
-````
+<file path="requirements.txt">
 click>=8.0.0
 questionary>=2.0.0
 rich>=13.0.0
 PyYAML>=6.0.0
-````
+</file>
 
-## File: test.txt
-````
+<file path="test.txt">
 # Test requirements
 -r base.txt
 pytest>=8.0.0
@@ -12447,4 +13204,6 @@ pytest-cov>=4.1.0
 pytest-mock>=3.12.0
 pytest-asyncio>=0.23.0
 coverage>=7.3.0
-````
+</file>
+
+</files>

@@ -95,3 +95,14 @@ docs/4-schemas/**
 /context/**
 /src/config/**
 tests/fixtures/documents/**
+presentation/**
+notebooks/**
+notes/**
+.mypy_cache/**
+.ruff_cache/**
+.cache/**
+.pytest_cache/**
+.DS_Store
+.DS_Store?
+.github/**
+.repomixignore
